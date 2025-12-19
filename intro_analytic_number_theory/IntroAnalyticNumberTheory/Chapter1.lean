@@ -45,31 +45,25 @@ example (h : RelativelyPrime a b) :
   apply (rel_prime_mult2 _ _ p q)
   exact h
 
--- don't need this since it's the same as Nat.eq_one_of_dvd_one
--- lemma div_one_means_one (n : ℕ) (h : n ∣ 1) : n = 1 := Nat.eq_one_of_dvd_one h
-
-example (a b : ℤ) (h : a = b) : a ∣ b := by
-  exact dvd_of_eq h
-
 -- Exercise 1.2
-example
-  (h : RelativelyPrime a b)
-  (h' : RelativelyPrime b c) : RelativelyPrime a (b * c) := by
 -- argument is basically
 -- ax + by = 1, ap + cq = 1
 -- therefore acx + bcy = c
 -- therefore ap + (acx + bcy) q = 1
--- therefore [collecting as] a(p + cx) + bc (yq) = 1
+-- therefore [collecting as] a(p + cxq) + bc (yq) = 1
 -- therefore gcd a bc | 1
 -- therefore gcd a bc = 1
 -- therefore (a,bc) rel prime
+example
+  (h : RelativelyPrime a b)
+  (h' : RelativelyPrime a c) : RelativelyPrime a (b * c) := by
   unfold RelativelyPrime
   unfold RelativelyPrime at h h'
   have ab_linear : ∃ x y, (1 = a * x + b * y) := by
     apply dvd_of_eq at h
     rw [Int.gcd_dvd_iff] at h
     exact h
-  have ac_linear : ∃ p q, (1 = b * p + c * q) := by
+  have ac_linear : ∃ p q, (1 = a * p + c * q) := by
     apply dvd_of_eq at h'
     rw [Int.gcd_dvd_iff] at h'
     exact h'
@@ -77,8 +71,8 @@ example
   rcases ac_linear with ⟨p, ⟨q, pq_def⟩⟩
   apply Nat.eq_one_of_dvd_one
   have : c = a * x * c + b * y * c := by
-    sorry
-  have foo : a * (p + c * x) + (b * c) * (y * q) = (1 : ℕ) := by sorry
-  -- seems that were getting tripped up on ints/nats.  we can rewrite
-  rw [<- Int.ofNat_dvd, <- foo]
+    grind
+  have bar : a * (p + c * x * q) + (b * c) * (y * q) = (1 : ℕ) := by
+    grind
+  rw [<- Int.ofNat_dvd, <- bar]
   apply gcd_div_linear_combo
