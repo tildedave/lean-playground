@@ -94,4 +94,68 @@ example (h : RelativelyPrime a b)
   have : RelativelyPrime (b^(k + 1)) (a^(n + 1)) := (rel_prime_power _ _ this)
   rw [rel_prime_swap]; exact this
 
+example (h : a ∣ c) (h' : a ∣ b + c) : a ∣ b := by
+  exact (Int.dvd_iff_dvd_of_dvd_add h').mpr h
+
+example (h : a ∣ c) (h' : a ∣ b) : a ∣ (b + c) := by
+  exact (Int.dvd_add_right h').mpr h
+
+-- Exercise 1.4
+-- idea here:
+-- d = (a + b).gcd(a - b)
+-- a + b + a - b = 2a, so d | 2a
+-- if d | a, then (since d | a + b), d| b , therefore d | 1 (def of gcd).  therefore d = 1.
+-- if d | 2, then d = 2 or d = 1.
+example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a - b) = 2 := by
+  let d := (a + b).gcd (a - b)
+  have h : ↑d ∣ (2 * a) := by
+    have h' : (a + b).gcd (a - b) = d := by grind
+    rw [Int.gcd_eq_iff] at h'
+    rcases h' with ⟨d_div_a_plus_b, ⟨d_div_a_minus_b, _⟩⟩
+    have r : (2 * a = (a - b) + (a + b)) := by ring
+    rw [r]
+    exact (Int.dvd_add_right d_div_a_minus_b).mpr d_div_a_plus_b
+  rw [Int.dvd_mul] at h
+  -- it's not 1 or 2, since it could be negative.
+  have d_div_a_or_d_div_two : (↑d ∣ a) ∨ (d ∣ 2) := by
+    -- OK so we know d | 2a, so we need to go through the cases here.
+    -- NOTE a could be negative.
+    -- rcases h with ⟨c1, ⟨c2, h'⟩⟩
+    -- rcases h' with ⟨c1_div_2, ⟨c2_div_a, def_of_d⟩⟩
+    -- have : c1 = -1 ∨ c1 = 1 ∨ c1 = -2 ∨ c1 = 2 := by
+    --   sorry
+    -- cases this
+    -- case inl c1_neg_one =>
+    --   left
+    --   have c2_def : c2 = -a := by sorry
+    --   rw [<- def_of_d, c2_def, c1_neg_one, neg_mul_neg, one_mul]
+    -- case inr this =>
+    --   cases this
+    --   case inl c1_one =>
+    --     left
+    --     have c2_def : c2 = a := by sorry
+    --     rw [<- def_of_d, c2_def, c1_one, one_mul]
+    --   case inr this =>
+    --     cases this
+    --     case inl c1_neg_two =>
+    --       right
+    sorry
+  cases d_div_a_or_d_div_two
+  case inl d_div_a =>
+    left
+    apply Nat.eq_one_of_dvd_one
+    have : ↑d ∣ (a + b) := by exact Int.gcd_dvd_left (a + b) (a - b)
+    have d_div_b : ↑d ∣ b := by exact (Int.dvd_iff_dvd_of_dvd_add this).mp h
+    have : ↑d ∣ 1 := by
+      rcases h with ⟨c1, ⟨c2, h'⟩⟩
+      rw [<- h, Int.dvd_gcd_iff]
+      exact ⟨d_div_a, d_div_b⟩
+    -- ugly by I mean it works.
+    exact (Nat.ModEq.dvd_iff (congrFun rfl 1) this).mp this
+  case inr h =>
+    have : d = 1 ∨ d = 2 := by
+      refine (Nat.dvd_prime ?_).mp h
+      exact Nat.prime_two
+    exact Or.symm (Or.symm this)
+
 end
