@@ -20,7 +20,7 @@ lemma rel_prime_swap : RelativelyPrime a b = RelativelyPrime b a := by
   unfold RelativelyPrime
   rw [Int.gcd_comm]
 
-lemma rel_prime_mult : RelativelyPrime (a * c) b → RelativelyPrime a b := by
+lemma rel_prime_mult_elim : RelativelyPrime (a * c) b → RelativelyPrime a b := by
   unfold RelativelyPrime
   rw [Int.gcd_eq_one_iff]
   intro ac_gcd_one_def
@@ -28,11 +28,11 @@ lemma rel_prime_mult : RelativelyPrime (a * c) b → RelativelyPrime a b := by
   intro c c_div_a c_div_b
   apply ac_gcd_one_def c (Int.dvd_mul_of_dvd_left c_div_a) c_div_b
 
-lemma rel_prime_mult2 : RelativelyPrime (a * c) (b * d) → RelativelyPrime a b := by
+lemma rel_prime_mult_elim2 : RelativelyPrime (a * c) (b * d) → RelativelyPrime a b := by
   intro h
-  apply (rel_prime_mult _ _ c)
+  apply (rel_prime_mult_elim _ _ c)
   rw [rel_prime_swap]
-  apply (rel_prime_mult _ _ d)
+  apply (rel_prime_mult_elim _ _ d)
   rw [rel_prime_swap]
   exact h
 
@@ -42,7 +42,7 @@ example (h : RelativelyPrime a b) :
   intro ⟨⟨p, a_def⟩, ⟨q, b_def⟩⟩
   rw [a_def] at h
   rw [b_def] at h
-  apply (rel_prime_mult2 _ _ p q)
+  apply (rel_prime_mult_elim2 _ _ p q)
   exact h
 
 -- Exercise 1.2
@@ -54,7 +54,7 @@ example (h : RelativelyPrime a b) :
 -- therefore gcd a bc | 1
 -- therefore gcd a bc = 1
 -- therefore (a,bc) rel prime
-example
+lemma rel_prime_mult_right
   (h : RelativelyPrime a b)
   (h' : RelativelyPrime a c) : RelativelyPrime a (b * c) := by
   unfold RelativelyPrime
@@ -76,3 +76,22 @@ example
     grind
   rw [<- Int.ofNat_dvd, <- bar]
   apply gcd_div_linear_combo
+
+example {x : ℤ} {y : ℕ} : x^(y + 1) = x^y * x := Int.pow_succ x y
+
+lemma rel_prime_power {n : ℕ} (h : RelativelyPrime a b) : RelativelyPrime a (b^(n + 1)) := by
+  induction n with
+    | zero => dsimp; rw [Int.pow_one]; exact h
+    | succ n ih =>
+      rw [Int.pow_succ, mul_comm]
+      apply rel_prime_mult_right _ _ _ h ih
+
+-- Exercise 1.3 (exact except for the bounds, need to figure out how to do this)
+example (h : RelativelyPrime a b)
+  (n k : ℕ) : RelativelyPrime (a^(n + 1)) (b^(k + 1)) := by
+  have : RelativelyPrime a (b^(k + 1)) := rel_prime_power _ _ h
+  have : RelativelyPrime (b^(k + 1)) a := by rw [rel_prime_swap]; exact this
+  have : RelativelyPrime (b^(k + 1)) (a^(n + 1)) := (rel_prime_power _ _ this)
+  rw [rel_prime_swap]; exact this
+
+end
