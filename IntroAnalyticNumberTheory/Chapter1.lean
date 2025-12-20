@@ -100,6 +100,73 @@ example (h : a ∣ c) (h' : a ∣ b + c) : a ∣ b := by
 example (h : a ∣ c) (h' : a ∣ b) : a ∣ (b + c) := by
   exact (Int.dvd_add_right h').mpr h
 
+theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
+  (h : a ∣ p * b) : (a ∣ b) ∨ ((a / p) ∣ b ∧ ↑p ∣ a) := by
+  rcases h with ⟨x, x_def⟩
+  have p_nz : (↑p ≠ (0 : ℤ)) := by
+    -- presumably this is easier
+    intro h
+    have : (p = 0) := by exact Int.ofNat_eq_zero.mp h
+    rw [this] at pp
+    apply (Nat.not_prime_zero pp)
+  by_cases h' : (↑p ∣ a)
+  · right
+    constructor
+    · use x
+      refine Int.eq_mul_div_of_mul_eq_mul_of_dvd_left ?_ h' x_def
+      exact p_nz
+    · exact h'
+  · left
+    have : (↑p ∣ x) := by
+      have : (↑p ∣ a * x) := by exact Dvd.intro b x_def
+      have : (↑p ∣ a ∨ ↑p ∣ x) := (Int.Prime.dvd_mul' pp this)
+      cases this
+      · absurd h'
+        (expose_names; exact Int.natAbs_dvd.mp h)
+      · (expose_names; exact Int.natAbs_dvd.mp h)
+    use (x / p)
+    rw [mul_comm a x] at x_def
+    rw [mul_comm a]
+    refine Int.eq_mul_div_of_mul_eq_mul_of_dvd_left ?_ this x_def
+    exact p_nz
+
+lemma dvd_a_impl_eq_1 {a b : ℤ}
+  (h : RelativelyPrime a b)
+  (h' : ↑((a + b).gcd (a - b)) ∣ a) :
+  ↑((a + b).gcd (a - b)) = 1 := by
+    generalize d_def : ↑((a + b).gcd (a - b)) = d
+    apply Nat.eq_one_of_dvd_one
+    rw [d_def] at h'
+    have : ↑d ∣ (a + b) := by
+      rw [<- d_def]
+      apply Int.gcd_dvd_left (a + b) (a - b)
+    have d_div_b : ↑d ∣ b := by exact (Int.dvd_iff_dvd_of_dvd_add this).mp d_div_a
+    have : ↑d ∣ 1 := by
+      rw [<- h, Int.dvd_gcd_iff]
+      exact ⟨h', d_div_b⟩
+    -- ugly but I mean it works.
+    exact (Nat.ModEq.dvd_iff (congrFun rfl 1) this).mp this
+
+lemma dvd_a_and_b_over_2_impl_eq_2 {a b : ℤ}
+  (h : RelativelyPrime a b)
+  (two_div : (2 : ℤ) ∣ ↑((a + b).gcd (a - b)))
+  (h' : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ a)
+  (h'' : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ b) :
+  -- (h''' : ↑2 ∣ ↑((a + b).gcd (a - b))) :
+  ↑((a + b).gcd (a - b)) = 2 := by
+    let d := ↑((a + b).gcd (a - b))
+    unfold RelativelyPrime at h
+    rw [Int.gcd_eq_one_iff] at h
+    have : ↑d / (2 : ℤ) = 1 := by
+      have : (↑d / (2 : ℤ) ≥ 0) := by
+        exact Int.zero_le_ofNat (d / 2)
+      exact Int.eq_one_of_dvd_one this (h (↑d / 2) h' h'')
+    have : ↑d = (2 : ℤ) := by
+      have two_neq_0 : ↑2 ≠ ↑0 := by grind
+      have := Int.eq_mul_of_ediv_eq_right two_div this
+      linarith
+    exact Eq.symm ((fun {m n} ↦ Int.ofNat_inj.mp) (id (Eq.symm this)))
+
 -- Exercise 1.4
 -- idea here:
 -- d = (a + b).gcd(a - b)
@@ -108,54 +175,47 @@ example (h : a ∣ c) (h' : a ∣ b) : a ∣ (b + c) := by
 -- if d | 2, then d = 2 or d = 1.
 example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a - b) = 2 := by
   let d := (a + b).gcd (a - b)
-  have h : ↑d ∣ (2 * a) := by
+  have d_div_2a : ↑d ∣ (2 * a) := by
     have h' : (a + b).gcd (a - b) = d := by grind
     rw [Int.gcd_eq_iff] at h'
     rcases h' with ⟨d_div_a_plus_b, ⟨d_div_a_minus_b, _⟩⟩
     have r : (2 * a = (a - b) + (a + b)) := by ring
     rw [r]
     exact (Int.dvd_add_right d_div_a_minus_b).mpr d_div_a_plus_b
-  rw [Int.dvd_mul] at h
-  -- it's not 1 or 2, since it could be negative.
-  have d_div_a_or_d_div_two : (↑d ∣ a) ∨ (d ∣ 2) := by
-    -- OK so we know d | 2a, so we need to go through the cases here.
-    -- NOTE a could be negative.
-    -- rcases h with ⟨c1, ⟨c2, h'⟩⟩
-    -- rcases h' with ⟨c1_div_2, ⟨c2_div_a, def_of_d⟩⟩
-    -- have : c1 = -1 ∨ c1 = 1 ∨ c1 = -2 ∨ c1 = 2 := by
-    --   sorry
-    -- cases this
-    -- case inl c1_neg_one =>
-    --   left
-    --   have c2_def : c2 = -a := by sorry
-    --   rw [<- def_of_d, c2_def, c1_neg_one, neg_mul_neg, one_mul]
-    -- case inr this =>
-    --   cases this
-    --   case inl c1_one =>
-    --     left
-    --     have c2_def : c2 = a := by sorry
-    --     rw [<- def_of_d, c2_def, c1_one, one_mul]
-    --   case inr this =>
-    --     cases this
-    --     case inl c1_neg_two =>
-    --       right
-    sorry
+  have d_div_2b : ↑d ∣ (2 * b) := by
+    have h' : (a + b).gcd (a - b) = d := by grind
+    rw [Int.gcd_eq_iff] at h'
+    rcases h' with ⟨d_div_a_plus_b, ⟨d_div_a_minus_b, _⟩⟩
+    have r : (2 * b = (a + b) - (a - b)) := by ring
+    rw [r]
+    exact Int.dvd_sub d_div_a_plus_b d_div_a_minus_b
+  have d_div_a_or_d_div_two : (↑d ∣ a) ∨ ((↑d / (2:ℤ)) ∣ a ∧ (2 : ℤ) ∣ ↑d) := by
+    apply int_dvd_prime_product _ d_div_2a
+    exact Nat.prime_two
   cases d_div_a_or_d_div_two
   case inl d_div_a =>
     left
-    apply Nat.eq_one_of_dvd_one
-    have : ↑d ∣ (a + b) := by exact Int.gcd_dvd_left (a + b) (a - b)
-    have d_div_b : ↑d ∣ b := by exact (Int.dvd_iff_dvd_of_dvd_add this).mp h
-    have : ↑d ∣ 1 := by
-      rcases h with ⟨c1, ⟨c2, h'⟩⟩
-      rw [<- h, Int.dvd_gcd_iff]
-      exact ⟨d_div_a, d_div_b⟩
-    -- ugly by I mean it works.
-    exact (Nat.ModEq.dvd_iff (congrFun rfl 1) this).mp this
-  case inr h =>
-    have : d = 1 ∨ d = 2 := by
-      refine (Nat.dvd_prime ?_).mp h
+    apply dvd_a_impl_eq_1 h
+    exact d_div_a
+  case inr d_div_two_div_a =>
+    have d_div_b_or_d_div_two : (↑d ∣ b) ∨ ((↑d / (2:ℤ)) ∣ b  ∧ (2 : ℤ) ∣ ↑d) := by
+      apply int_dvd_prime_product _ d_div_2b
       exact Nat.prime_two
-    exact Or.symm (Or.symm this)
-
+    cases d_div_b_or_d_div_two
+    case inl d_div_b =>
+      left
+      have : (a + b).gcd (a - b) = (b + a).gcd (b - a) := by sorry
+      rw [this]
+      rw [rel_prime_swap] at h
+      apply dvd_a_impl_eq_1 h
+      rw [<- this]
+      exact d_div_b
+    case inr h' =>
+      -- in this situation, need to have d / 2 | b and then combine it to show d / 2 | 1
+      rcases h' with ⟨d_div_two_div_b, two_div_gcd⟩
+      right
+      -- don't understand why I have to do this, d should be definitionally equal
+      have j : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ a := by grind
+      have j' : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ b := by grind
+      apply dvd_a_and_b_over_2_impl_eq_2 h two_div_gcd j j'
 end
