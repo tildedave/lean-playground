@@ -204,7 +204,11 @@ example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a -
     cases d_div_b_or_d_div_two
     case inl d_div_b =>
       left
-      have : (a + b).gcd (a - b) = (b + a).gcd (b - a) := by sorry
+      have : (a + b).gcd (a - b) = (b + a).gcd (b - a) := by
+        rw [Int.add_comm]
+        refine Int.gcd_right_eq_iff.mpr ?_
+        intro c c_div_plus
+        exact dvd_sub_comm
       rw [this]
       rw [rel_prime_swap] at h
       apply dvd_a_impl_eq_1 h
