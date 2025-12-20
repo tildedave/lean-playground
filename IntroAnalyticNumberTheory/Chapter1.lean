@@ -130,22 +130,15 @@ theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
     refine Int.eq_mul_div_of_mul_eq_mul_of_dvd_left ?_ this x_def
     exact p_nz
 
+-- Claude simplified this
 lemma dvd_a_impl_eq_1 {a b : ℤ}
   (h : RelativelyPrime a b)
   (h' : ↑((a + b).gcd (a - b)) ∣ a) :
   ↑((a + b).gcd (a - b)) = 1 := by
-    generalize d_def : ↑((a + b).gcd (a - b)) = d
+    set d := (a + b).gcd (a - b)
     apply Nat.eq_one_of_dvd_one
-    rw [d_def] at h'
-    have : ↑d ∣ (a + b) := by
-      rw [<- d_def]
-      apply Int.gcd_dvd_left (a + b) (a - b)
-    have d_div_b : ↑d ∣ b := by exact (Int.dvd_iff_dvd_of_dvd_add this).mp d_div_a
-    have : ↑d ∣ 1 := by
-      rw [<- h, Int.dvd_gcd_iff]
-      exact ⟨h', d_div_b⟩
-    -- ugly but I mean it works.
-    exact (Nat.ModEq.dvd_iff (congrFun rfl 1) this).mp this
+    rw [<- h, Int.dvd_gcd_iff]
+    exact ⟨h', (Int.dvd_iff_dvd_of_dvd_add (Int.gcd_dvd_left _ _)).mp h'⟩
 
 lemma dvd_a_and_b_over_2_impl_eq_2 {a b : ℤ}
   (h : RelativelyPrime a b)
@@ -223,3 +216,5 @@ example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a -
       have j' : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ b := by grind
       apply dvd_a_and_b_over_2_impl_eq_2 h two_div_gcd j j'
 end
+
+-- Exercise 1.5
