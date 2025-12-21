@@ -16,6 +16,9 @@ theorem gcd_div_linear_combo (x y : Int) : ↑(a.gcd b) ∣ (a * x + b * y) := b
 
 def RelativelyPrime (a b : Int) : Prop := a.gcd b = 1
 
+@[simp]
+theorem RelativelyPrime_def (a b : Int) : RelativelyPrime a b ↔ a.gcd b = 1 := Iff.rfl
+
 lemma rel_prime_swap : RelativelyPrime a b = RelativelyPrime b a := by
   unfold RelativelyPrime
   rw [Int.gcd_comm]
@@ -100,6 +103,23 @@ example (h : a ∣ c) (h' : a ∣ b + c) : a ∣ b := by
 example (h : a ∣ c) (h' : a ∣ b) : a ∣ (b + c) := by
   exact (Int.dvd_add_right h').mpr h
 
+-- Claude's version - which does not compile
+-- theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
+--   (h : a ∣ p * b) : (a ∣ b) ∨ ((a / p) ∣ b ∧ ↑p ∣ a) := by
+--   obtain ⟨x, hx⟩ := h
+--   have p_nz : (p : ℤ) ≠ 0 := Int.natCast_ne_zero_iff_pos.mpr pp.pos
+--   by_cases h' : (p : ℤ) ∣ a
+--   · right
+--     exact ⟨⟨x, Int.eq_mul_div_of_mul_eq_mul_of_dvd_left p_nz h' hx⟩, h'⟩
+--   · left
+--     have : (p : ℤ) ∣ x := by
+--       rcases Int.Prime.dvd_mul' pp ⟨b, hx⟩ with ha | hx
+--       · exact absurd (Int.natCast_dvd_natCast.mpr (Int.natAbs_dvd.mp ha)) h'
+--       · exact Int.natAbs_dvd.mp hx
+--     refine ⟨x / p, ?_⟩
+--     rw [mul_comm] at hx ⊢
+--     exact Int.eq_mul_div_of_mul_eq_mul_of_dvd_left p_nz this hx
+
 theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
   (h : a ∣ p * b) : (a ∣ b) ∨ ((a / p) ∣ b ∧ ↑p ∣ a) := by
   rcases h with ⟨x, x_def⟩
@@ -129,6 +149,11 @@ theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
     rw [mul_comm a]
     refine Int.eq_mul_div_of_mul_eq_mul_of_dvd_left ?_ this x_def
     exact p_nz
+
+theorem rel_prime_dvd ( h: RelativelyPrime a b) : (c ∣ a * b) → c ∣ a ∨ c ∣ b := by
+  unfold RelativelyPrime at h
+  rw [Int.gcd_eq_one_iff] at h
+  rintro ⟨x, x_def⟩
 
 -- Claude simplified this
 lemma dvd_a_impl_eq_1 {a b : ℤ}
@@ -215,6 +240,71 @@ example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a -
       have j : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ a := by grind
       have j' : ↑((a + b).gcd (a - b)) / (2 : ℤ) ∣ b := by grind
       apply dvd_a_and_b_over_2_impl_eq_2 h two_div_gcd j j'
-end
 
--- Exercise 1.5
+
+-- Exercise 1.5 needs some scaffolding:
+-- if p | d -> p = q (some prime) then d = 1 or d = q
+-- then proof by cases.  possible but annoying, I'll return to this.
+
+-- Exercise 1.6
+example (h : RelativelyPrime a b) (h' : d ∣ (a + b)) : RelativelyPrime d a := by
+  obtain ⟨k, hk⟩ := h'
+  apply Nat.eq_one_of_dvd_one
+  rw [RelativelyPrime_def, Int.gcd_eq_one_iff] at h
+  apply Int.ofNat_dvd.mp
+  apply h ↑(d.gcd a)
+  · exact Int.gcd_dvd_right _ _
+  · rw [← Int.gcd_mul_left_sub_right d a k]
+    convert Int.gcd_dvd_right d (d * k - a)
+    linarith
+
+-- Execise 1.7 requires some definition of a rational number, will
+-- return to this.
+-- a/b + c/d = n --> a*d/b*d + c*b/b*d = n --> n (b * d) = (a + d * b + c)
+
+theorem not_squarefree_implies_divisor (n : ℕ)
+  : ¬ Squarefree n → ∃ p, (Nat.Prime p) ∧ p * p ∣ n := by
+  intro not_sqfree
+  unfold Squarefree at not_sqfree
+  push_neg at not_sqfree
+  obtain ⟨x, x_div, hx⟩ := not_sqfree
+  have x_ne_one : x ≠ 1 := fun x_eq_one => hx ⟨1, x_eq_one.symm⟩
+  obtain ⟨p, pp, y, rfl⟩ := Nat.ne_one_iff_exists_prime_dvd.mp x_ne_one
+  obtain ⟨k, hk⟩ := x_div
+  exact ⟨p, pp, y * y * k, by linarith⟩
+
+theorem square_dvd_implies_not_squarefree {p n : ℕ} (h : Nat.Prime p) :
+  (p * p ∣ n) → ¬ Squarefree n := by sorry
+
+theorem squarefree_decidable (n : ℕ) : Squarefree n ∨ ¬ Squarefree n := by
+  induction' n using Nat.strong_induction_on with n ih
+  by_cases h : n = 0
+  · right
+    rw [h]
+    exact not_squarefree_zero
+  · by_cases h' : n = 1
+    · rw [h']
+      left
+      exact squarefree_one
+    -- take any prime dividing n, if p^2 divides n, not squarefree, otherwise recurse on n / p
+    · obtain ⟨p, pp, hp⟩ := (Nat.exists_prime_and_dvd h')
+      by_cases h'' : p * p ∣ n
+      · right
+        apply (square_dvd_implies_not_squarefree pp)
+        exact h''
+      · -- must recurse then reconstruct.  it has to be OK to reconstruct
+        -- which is where I'll get into trouble
+        sorry
+
+-- this seems to require taking n, turning it into a list of all its factors,
+-- then grouping the factors together.
+-- I think we can do this by strong induction on n.
+-- we have to pull out the primes one by one, and we have to pull out the
+-- biggest prime factor of a number when we do it.  p^{2k + 1} | n ->
+-- by induction (n/p^{2k+1}) gives us a, b so that a^2 b = (n/p^{2k+1})
+-- then n = (a p^k)^2 (bp).  lots of stuff will be a pain here.
+-- must choose a prime by a defined order, and "remember" that the prime has
+-- been chosen in later stages.
+example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by sorry
+
+end
