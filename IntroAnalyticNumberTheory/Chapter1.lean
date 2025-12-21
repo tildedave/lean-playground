@@ -288,12 +288,19 @@ theorem squarefree_decidable (n : ℕ) : Squarefree n ∨ ¬ Squarefree n := by
       exact squarefree_one
     -- take any prime dividing n, if p^2 divides n, not squarefree, otherwise recurse on n / p
     · obtain ⟨p, pp, hp⟩ := (Nat.exists_prime_and_dvd h')
+      have : p > 1 := by exact Nat.Prime.one_lt pp
       by_cases h'' : p * p ∣ n
       · right
         apply (square_dvd_implies_not_squarefree pp)
         exact h''
       · -- must recurse then reconstruct.  it has to be OK to reconstruct
         -- which is where I'll get into trouble
+        set r := n / p
+        have : r < n := by
+          sorry
+        have : (Squarefree r ∨ ¬ Squarefree r) := by
+          apply ih
+          exact this
         sorry
 
 -- this seems to require taking n, turning it into a list of all its factors,
