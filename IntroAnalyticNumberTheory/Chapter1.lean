@@ -422,4 +422,63 @@ example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
     intro h
     rcases Int.isUnit_iff.mp h with h1 | h1 <;> nlinarith
   }
+
+example (a b c : ℕ) : a * (b + c) = a * b + a * c := by exact Nat.mul_add a b c
+
+
+-- Exercise 1.16. Prove that if 2^n - 1 is prime, then n is prime.
+-- this is a contrapositive statement
+
+lemma factor_power_2 (a b : ℕ) :
+    (2^(a * b) : ℤ) - 1 = ((2^a : ℤ) - 1) * (∑ i ∈ Finset.range b, (2^(a * i) : ℤ)) := by
+  induction b with
+  | zero => simp
+  | succ b ih =>
+    rw [Finset.sum_range_succ, add_comm, Int.mul_add, <- ih]
+    ring_nf
+
+lemma nat_geo_sum_eq (x : ℕ) (h : x ≥ 2) (n : ℕ)
+  : ∑ i ∈ Finset.range n, x ^ i = (x ^ n - 1) / (x - 1) := by
+  rw [Nat.geomSum_eq]
+  linarith
+
+example (a n : ℕ) : 2^(a * n) = (2^a)^n := by exact Nat.pow_mul 2 a n
+
+example (n : ℕ) (hn : n ≥ 2) : Nat.Prime (2^n - 1) → Nat.Prime n := by
+  contrapose
+  have twon_bound : (2 ^ n - 1 ≥ 2) := by
+    refine (Nat.le_sub_one_iff_lt ?_).mpr ?_
+    · exact Nat.two_pow_pos n
+    · refine (Nat.log2_lt ?_).mp hn
+      exact Ne.symm (Nat.zero_ne_add_one 1)
+  rw [Nat.not_prime_iff_exists_mul_eq hn]
+  intro ⟨a, b, a_bound, b_bound, hab⟩
+  · rw [Nat.not_prime_iff_exists_mul_eq twon_bound]
+    have two_pow_a_below : 0 < 2^a := by exact Nat.two_pow_pos a
+    have two_pow_n_below : 0 < 2^n := by exact Nat.two_pow_pos n
+    refine ⟨2^a - 1, ∑ i ∈ Finset.range b, 2^(a * i), ?_, ?_, ?_⟩
+    · have : 2^a < 2^n := Nat.pow_lt_pow_right (by omega : 1 < 2) a_bound
+      omega
+    · have : ∑ i ∈ Finset.range b, 2 ^ (a * i) = ∑ i ∈ Finset.range b, (2 ^ a) ^ i := by
+        simp only [← pow_mul]
+      rw [this]
+      have a_gt_1 : a > 1 := by
+        by_cases h : a > 1
+        · trivial
+        · exfalso
+          rw [Nat.not_lt] at h
+          induction a
+          · linarith
+          · nlinarith [h]
+      have : 2^a ≥ 2 := by exact Nat.le_pow (by linarith)
+      rw [nat_geo_sum_eq _ this, <- pow_mul, hab]
+      have : 2^ n - 1 ≥ 0 := by linarith
+      refine Nat.div_lt_self (by linarith) (?_)
+      refine Nat.lt_sub_of_add_lt ?_
+      dsimp
+      refine (Nat.log2_lt ?_).mp a_gt_1
+      tauto
+    · rw [<- hab]
+      zify [Nat.one_le_two_pow, Nat.one_le_two_pow]
+      exact_mod_cast (factor_power_2 a b).symm
 end
