@@ -276,7 +276,16 @@ theorem not_squarefree_implies_divisor (n : ℕ)
   exact ⟨p, pp, y * y * k, by linarith⟩
 
 theorem square_dvd_implies_not_squarefree {p n : ℕ} (h : Nat.Prime p) :
-  (p * p ∣ n) → ¬ Squarefree n := by sorry
+  (p * p ∣ n) → ¬ Squarefree n := by
+  intro q n_sqfree
+  obtain ⟨k, hk⟩ := q
+  rw [hk, squarefree_mul_iff] at n_sqfree
+  obtain ⟨_, p_sq_sqfree, _⟩ := n_sqfree
+  unfold Squarefree at p_sq_sqfree
+  obtain p_unit := (p_sq_sqfree p (dvd_refl _))
+  apply Prime.not_unit at p_unit
+  · contradiction
+  · exact Nat.prime_iff.mp h
 
 -- this is just sugar around Nat.squarefree_mul, probably better to just use that
 theorem squarefree_mult {p n} (pp : Nat.Prime p) :
@@ -290,7 +299,10 @@ theorem squarefree_mult {p n} (pp : Nat.Prime p) :
 
 theorem neg_squarefree_mult {x n : ℕ} :
   ¬ (Squarefree n) → ¬ Squarefree (n * x) := by
-  sorry
+  intro neg_n_sqfree neg_n_x_sqfree
+  rw [squarefree_mul_iff] at neg_n_x_sqfree
+  rcases neg_n_x_sqfree with ⟨_, n_sqfree, _⟩
+  contradiction
 
 theorem coprime_dvd_div {p n} (pp : Nat.Prime p) (h : p ∣ n) (h' : ¬ p * p ∣ n) :
   Nat.Coprime p (n / p) := by
@@ -325,16 +337,11 @@ theorem squarefree_decidable (n : ℕ) : Squarefree n ∨ ¬ Squarefree n := by
 example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
   induction' n using Nat.strong_induction_on with n ih
   rcases n with _ | _ | n
-  · use 0; use 1
-    dsimp
-    refine ⟨rfl, squarefree_one⟩
-  · use 1; use 1
-    dsimp
-    refine ⟨rfl, squarefree_one⟩
+  · exact ⟨0, 1, rfl, squarefree_one⟩
+  · exact ⟨1, 1, rfl, squarefree_one⟩
   · set n' := n + 1 + 1
     obtain ⟨p, pp, hp⟩ := Nat.exists_prime_and_dvd (by omega : n + 2 ≠ 1)
     have one_lt_p : (1 < p) := Nat.Prime.one_lt pp
-    -- have one_lt_p_sq : (1 < p * p) := Nat.sqrt_lt.mp one_lt_p
     by_cases h : p * p ∣ n'
     · set r := n' / (p * p)
       have : r < n' := Nat.div_lt_self (Nat.zero_lt_succ (n + 1)) (Nat.sqrt_lt.mp one_lt_p)
