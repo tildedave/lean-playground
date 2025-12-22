@@ -333,25 +333,27 @@ example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
     refine ⟨rfl, squarefree_one⟩
   · set n' := n + 1 + 1
     obtain ⟨p, pp, hp⟩ := Nat.exists_prime_and_dvd (by omega : n + 2 ≠ 1)
+    have one_lt_p : (1 < p) := Nat.Prime.one_lt pp
+    -- have one_lt_p_sq : (1 < p * p) := Nat.sqrt_lt.mp one_lt_p
     by_cases h : p * p ∣ n'
     · set r := n' / (p * p)
-      have : r < n' := by sorry
+      have : r < n' := Nat.div_lt_self (Nat.zero_lt_succ (n + 1)) (Nat.sqrt_lt.mp one_lt_p)
       obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
       use (qa * p)
       use qb
       change (n' / (p * p)  = qa * qa * qb) at hq
       refine ⟨?_, hsq⟩
-      have clear_denom : n' = (p * p) * qa * qa * qb := by
-        sorry
+      have clear_denom : n' = (qa * qa * qb) * (p * p) := by
+        exact Nat.eq_mul_of_div_eq_left h hq
       grind
     · set r := n' / p
-      have : r < n' := by sorry
+      have : r < n' := Nat.div_lt_self (Nat.zero_lt_succ (n + 1)) (Nat.Prime.one_lt pp)
       obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
       use qa
       use (qb * p)
       change (n' / p  = qa * qa * qb) at hq
-      have clear_denom : n' = p * qa * qa * qb := by
-        sorry
+      have clear_denom : n' = (qa * qa * qb) * p := by
+        exact Nat.eq_mul_of_div_eq_left hp hq
       apply (squarefree_mult pp) at hsq
       · refine ⟨?_, hsq⟩
         grind
