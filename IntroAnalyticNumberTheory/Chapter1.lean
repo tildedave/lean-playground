@@ -262,7 +262,8 @@ example (h : RelativelyPrime a b) (h' : d ∣ (a + b)) : RelativelyPrime d a := 
 -- return to this.
 -- a/b + c/d = n --> a*d/b*d + c*b/b*d = n --> n (b * d) = (a + d * b + c)
 
--- Exercise 1.8 lemmas
+-- Exercise 1.8
+-- bit of a saga
 
 theorem not_squarefree_implies_divisor (n : ℕ)
   : ¬ Squarefree n → ∃ p, (Nat.Prime p) ∧ p * p ∣ n := by
@@ -341,20 +342,18 @@ example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
   · exact ⟨1, 1, rfl, squarefree_one⟩
   · set n' := n + 1 + 1
     obtain ⟨p, pp, hp⟩ := Nat.exists_prime_and_dvd (by omega : n + 2 ≠ 1)
-    have one_lt_p : (1 < p) := Nat.Prime.one_lt pp
     by_cases h : p * p ∣ n'
     · set r := n' / (p * p)
-      have : r < n' := Nat.div_lt_self (Nat.zero_lt_succ (n + 1)) (Nat.sqrt_lt.mp one_lt_p)
+      have : r < n' := Nat.div_lt_self
+        (Nat.zero_lt_succ (n + 1))
+        (Nat.sqrt_lt.mp (Nat.Prime.one_lt pp))
       obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
-      use (qa * p)
-      use qb
-      change (n' / (p * p)  = qa * qa * qb) at hq
-      refine ⟨?_, hsq⟩
-      have clear_denom : n' = (qa * qa * qb) * (p * p) := by
-        exact Nat.eq_mul_of_div_eq_left h hq
-      grind
+      refine ⟨qa * p, qb, ?_, hsq⟩
+      rw [Nat.eq_mul_of_div_eq_left h hq]; ring
     · set r := n' / p
-      have : r < n' := Nat.div_lt_self (Nat.zero_lt_succ (n + 1)) (Nat.Prime.one_lt pp)
+      have : r < n' := Nat.div_lt_self
+        (Nat.zero_lt_succ (n + 1))
+        (Nat.Prime.one_lt pp)
       obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
       use qa
       use (qb * p)
