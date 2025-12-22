@@ -322,6 +322,41 @@ theorem squarefree_decidable (n : ℕ) : Squarefree n ∨ ¬ Squarefree n := by
 -- then n = (a p^k)^2 (bp).  lots of stuff will be a pain here.
 -- must choose a prime by a defined order, and "remember" that the prime has
 -- been chosen in later stages.
-example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by sorry
-
+example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
+  induction' n using Nat.strong_induction_on with n ih
+  rcases n with _ | _ | n
+  · use 0; use 1
+    dsimp
+    refine ⟨rfl, squarefree_one⟩
+  · use 1; use 1
+    dsimp
+    refine ⟨rfl, squarefree_one⟩
+  · set n' := n + 1 + 1
+    obtain ⟨p, pp, hp⟩ := Nat.exists_prime_and_dvd (by omega : n + 2 ≠ 1)
+    by_cases h : p * p ∣ n'
+    · set r := n' / (p * p)
+      have : r < n' := by sorry
+      obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
+      use (qa * p)
+      use qb
+      change (n' / (p * p)  = qa * qa * qb) at hq
+      refine ⟨?_, hsq⟩
+      have clear_denom : n' = (p * p) * qa * qa * qb := by
+        sorry
+      grind
+    · set r := n' / p
+      have : r < n' := by sorry
+      obtain ⟨qa, qb, ⟨hq, hsq⟩⟩ := (ih r this)
+      use qa
+      use (qb * p)
+      change (n' / p  = qa * qa * qb) at hq
+      have clear_denom : n' = p * qa * qa * qb := by
+        sorry
+      apply (squarefree_mult pp) at hsq
+      · refine ⟨?_, hsq⟩
+        grind
+      · intro ⟨k, hk⟩
+        apply h
+        use (k * qa * qa)
+        grind
 end
