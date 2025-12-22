@@ -1,6 +1,8 @@
 import Mathlib.Tactic
 import Mathlib.Util.Delaborators
 
+set_option linter.style.induction false
+
 section
 variable (a b c d : Int)
 variable (x y : Int)
@@ -149,11 +151,6 @@ theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
     rw [mul_comm a]
     refine Int.eq_mul_div_of_mul_eq_mul_of_dvd_left ?_ this x_def
     exact p_nz
-
-theorem rel_prime_dvd ( h: RelativelyPrime a b) : (c ∣ a * b) → c ∣ a ∨ c ∣ b := by
-  unfold RelativelyPrime at h
-  rw [Int.gcd_eq_one_iff] at h
-  rintro ⟨x, x_def⟩
 
 -- Claude simplified this
 lemma dvd_a_impl_eq_1 {a b : ℤ}
