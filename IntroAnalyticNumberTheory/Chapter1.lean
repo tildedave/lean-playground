@@ -408,7 +408,7 @@ example {a b n : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : b * b ∣ n ∧ ∀ a, 
 
 -- Exercise 1.11
 
-def Composite (n : ℤ) := ∃ a b, a > 1 ∧ b > 1 ∧ (n = a * b)
+def Composite (n : ℤ) := ∃ a b, a ≠ 1 ∧ b ≠ 1 ∧ (n = a * b)
 
 example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
   have : (n^4 + 4) = ((n^2 - 2*n + 2)*(n^2 + 2*n + 2)) := by
@@ -421,7 +421,5 @@ example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
           rw [Int.mul_comm]
   rw [this]
   refine ⟨n^2 - 2*n + 2, ⟨n^2 + 2*n + 2, ?_⟩⟩
-  refine ⟨(by nlinarith), (by nlinarith), rfl⟩
-
-
+  exact ⟨(by nlinarith), (by nlinarith), rfl⟩
 end
