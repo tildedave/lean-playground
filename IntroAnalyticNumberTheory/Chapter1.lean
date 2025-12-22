@@ -262,6 +262,8 @@ example (h : RelativelyPrime a b) (h' : d ∣ (a + b)) : RelativelyPrime d a := 
 -- return to this.
 -- a/b + c/d = n --> a*d/b*d + c*b/b*d = n --> n (b * d) = (a + d * b + c)
 
+-- Exercise 1.8 lemmas
+
 theorem not_squarefree_implies_divisor (n : ℕ)
   : ¬ Squarefree n → ∃ p, (Nat.Prime p) ∧ p * p ∣ n := by
   intro not_sqfree
@@ -276,34 +278,42 @@ theorem not_squarefree_implies_divisor (n : ℕ)
 theorem square_dvd_implies_not_squarefree {p n : ℕ} (h : Nat.Prime p) :
   (p * p ∣ n) → ¬ Squarefree n := by sorry
 
+-- this is just sugar around Nat.squarefree_mul, probably better to just use that
+theorem squarefree_mult {p n} (pp : Nat.Prime p) :
+  (¬ p ∣ n) → (Squarefree n) → Squarefree (n * p) := by
+  intro p_div sqfree_n
+  have : n.Coprime p := by
+    rw [Nat.coprime_comm]
+    refine (Nat.Prime.coprime_iff_not_dvd pp).mpr p_div
+  rw [Nat.squarefree_mul this]
+  refine ⟨sqfree_n, Prime.squarefree (Nat.prime_iff.mp pp)⟩
+
+theorem neg_squarefree_mult {x n : ℕ} :
+  ¬ (Squarefree n) → ¬ Squarefree (n * x) := by
+  sorry
+
+theorem coprime_dvd_div {p n} (pp : Nat.Prime p) (h : p ∣ n) (h' : ¬ p * p ∣ n) :
+  Nat.Coprime p (n / p) := by
+  refine Nat.gcd_eq_one_iff.mpr fun c c_div_p c_div_n_p => ?_
+  rcases Nat.dvd_prime pp |>.mp c_div_p with rfl | rfl
+  · trivial
+  · exact absurd ((Nat.dvd_div_iff_mul_dvd h).mp c_div_n_p) h'
+
+-- we did it joe
+-- with help from Claude of course
 theorem squarefree_decidable (n : ℕ) : Squarefree n ∨ ¬ Squarefree n := by
   induction' n using Nat.strong_induction_on with n ih
-  by_cases h : n = 0
-  · right
-    rw [h]
-    exact not_squarefree_zero
-  · by_cases h' : n = 1
-    · rw [h']
-      left
-      exact squarefree_one
-    -- take any prime dividing n, if p^2 divides n, not squarefree, otherwise recurse on n / p
-    · obtain ⟨p, pp, hp⟩ := (Nat.exists_prime_and_dvd h')
-      have : p > 1 := by exact Nat.Prime.one_lt pp
-      by_cases h'' : p * p ∣ n
-      · right
-        apply (square_dvd_implies_not_squarefree pp)
-        exact h''
-      · -- must recurse then reconstruct.  it has to be OK to reconstruct
-        -- which is where I'll get into trouble
-        set r := n / p
-        have : r < n := by
-          sorry
-        have : (Squarefree r ∨ ¬ Squarefree r) := by
-          apply ih
-          exact this
-        sorry
+  rcases n with _ | _ | n
+  · exact .inr not_squarefree_zero
+  · exact .inl squarefree_one
+  · obtain ⟨p, pp, hp⟩ := Nat.exists_prime_and_dvd (by omega : n + 2 ≠ 1)
+    by_cases h : p * p ∣ n + 2
+    · exact .inr (square_dvd_implies_not_squarefree pp h)
+    · rcases ih ((n + 2) / p) (Nat.div_lt_self (by omega) pp.one_lt) with r_sqfree | neg_r_sqfree
+      · refine .inl (Nat.div_mul_cancel hp ▸ squarefree_mult pp ?_ r_sqfree)
+        exact fun ⟨k, hk⟩ => h ⟨k, by rw [mul_assoc, ← hk, mul_comm, Nat.div_mul_cancel hp]⟩
+      · exact .inr (Nat.div_mul_cancel hp ▸ neg_squarefree_mult neg_r_sqfree)
 
--- this seems to require taking n, turning it into a list of all its factors,
 -- then grouping the factors together.
 -- I think we can do this by strong induction on n.
 -- we have to pull out the primes one by one, and we have to pull out the
