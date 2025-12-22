@@ -4,8 +4,9 @@ import Mathlib.Util.Delaborators
 set_option linter.style.induction false
 
 section
-variable (a b c d : Int)
-variable (x y : Int)
+variable (a b c d : ℤ)
+variable (x y : ℤ)
+variable (n : ℕ)
 
 -- can use this:
 -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Int/GCD.html#Int.gcd_dvd_iff
@@ -261,6 +262,7 @@ example (h : RelativelyPrime a b) (h' : d ∣ (a + b)) : RelativelyPrime d a := 
 
 -- Exercise 1.8
 -- bit of a saga
+-- kind of nice to not deal with integers on this one
 
 theorem not_squarefree_implies_divisor (n : ℕ)
   : ¬ Squarefree n → ∃ p, (Nat.Prime p) ∧ p * p ∣ n := by
@@ -364,4 +366,44 @@ example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
         apply h
         use (k * qa * qa)
         grind
+
+-- 1.9a is wrong of course, 9, 25 | 225, 3 doesn't divide 5.
+-- 1.9b is right because if you didn't have a division, it violates the
+-- maximality.  Should be an easy proof... (ha ha ha)
+
+theorem ndvd_impl_lcm_gt {a b : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : ¬a ∣ b) : b < a.lcm b := by
+  by_contra hnlt
+  push_neg at hnlt
+  have hdvd : b ∣ a.lcm b := Nat.dvd_lcm_right a b
+  have hlcm_pos : 0 < a.lcm b := Nat.lcm_pos
+    (Nat.zero_lt_of_ne_zero ha)
+    (Nat.zero_lt_of_ne_zero hb)
+  have : b ≤ a.lcm b := Nat.le_of_dvd hlcm_pos hdvd
+  have b_eq : a.lcm b = b := Nat.le_antisymm hnlt this
+  have : a ∣ a.lcm b := Nat.dvd_lcm_left a b
+  rw [b_eq] at this
+  exact h this
+
+-- theorem dvd_lcm_mul {a b n : ℕ} (ha : a ∣ n) (hb : b ∣ n) : a.lcm b ∣ n :=
+--   by exact Nat.lcm_dvd ha hb
+
+theorem lcm_square {a b : ℕ} : (a.lcm b * a.lcm b) = (a * a).lcm (b * b) := by
+  repeat rw [<- Nat.pow_two]
+  rw [Nat.pow_lcm_pow]
+
+example {a b n : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : b * b ∣ n ∧ ∀ a, a * a ∣ n → a^2 ≤ b^2)
+  : a * a ∣ n → a ∣ b := by
+  intro a_sq_div_n
+  obtain ⟨bsq_div_n, bsq_maximal⟩ := h
+  by_cases h : a ∣ b
+  · trivial
+  · have : (a.lcm b) * (a.lcm b) ∣ n := by
+      rw [lcm_square]
+      exact Nat.lcm_dvd a_sq_div_n bsq_div_n
+    have a_gt_zero : b < a.lcm b := (ndvd_impl_lcm_gt ha hb h)
+    have b_gt_zero : (a.lcm b) * (a.lcm b) > b * b := by
+      exact Nat.mul_self_lt_mul_self a_gt_zero
+    obtain bad_bound := bsq_maximal _ this
+    linarith
+
 end
