@@ -408,18 +408,18 @@ example {a b n : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : b * b ∣ n ∧ ∀ a, 
 
 -- Exercise 1.11
 
-def Composite (n : ℤ) := ∃ a b, a ≠ 1 ∧ b ≠ 1 ∧ (n = a * b)
+def Composite (n : ℤ) := ∃ a b, ¬ IsUnit a ∧ ¬ IsUnit b ∧ (n = a * b)
 
 example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
-  have : (n^4 + 4) = ((n^2 - 2*n + 2)*(n^2 + 2*n + 2)) := by
-    calc (n^4 + 4) = ((n^4 + 4*n^2 + 4) - 4*n^2) := by omega
-         _ = (n^2 + 2)^2 - (2*n)^2 := by grind
-         _ = (n^2 + 2*n + 2)*(n^2 - 2*n + 2) := by
-          rw [sq_sub_sq (n^2 + 2) (2*n), add_right_comm _ 2 (2*n)]
-          rw [<- sub_add_eq_add_sub _ (2*n) _]
-         _ = (n ^ 2 - 2 * n + 2) * (n ^ 2 + 2 * n + 2) := by
-          rw [Int.mul_comm]
+  have : (n^4 + 4) = (n^2 - 2*n + 2) * (n^2 + 2*n + 2) := by
+    calc (n^4 + 4) = ((n^4 + 4*n^2 + 4) - 4*n^2) := by ring
+         _ = (n^2 + 2)^2 - (2*n)^2 := by ring
+         _ = (n^2 - 2*n + 2)*(n^2 + 2*n + 2) := by
+          rw [sq_sub_sq, add_right_comm, <- sub_add_eq_add_sub, mul_comm]
   rw [this]
-  refine ⟨n^2 - 2*n + 2, ⟨n^2 + 2*n + 2, ?_⟩⟩
-  exact ⟨(by nlinarith), (by nlinarith), rfl⟩
+  refine ⟨n^2 - 2*n + 2, n^2 + 2*n + 2, ?_, ?_, rfl⟩
+  all_goals {
+    intro h
+    rcases Int.isUnit_iff.mp h with h1 | h1 <;> nlinarith
+  }
 end
