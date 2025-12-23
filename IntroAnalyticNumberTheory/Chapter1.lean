@@ -476,8 +476,7 @@ example (n : ℕ) (hn : n ≥ 2) : Nat.Prime (2^n - 1) → Nat.Prime n := by
       refine Nat.div_lt_self (by linarith) (?_)
       refine Nat.lt_sub_of_add_lt ?_
       dsimp
-      refine (Nat.log2_lt ?_).mp a_gt_1
-      tauto
+      refine (Nat.log2_lt (by tauto)).mp a_gt_1
     · rw [<- hab]
       zify [Nat.one_le_two_pow, Nat.one_le_two_pow]
       exact_mod_cast (factor_power_2 a b).symm
