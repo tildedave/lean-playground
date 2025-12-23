@@ -514,4 +514,144 @@ example (n : ℕ) (hn : n ≥ 2) : Nat.Prime (2^n - 1) → Nat.Prime n := by
     · rw [<- hab]
       zify [Nat.one_le_two_pow, Nat.one_le_two_pow]
       exact_mod_cast (factor_power_2 a b).symm
+
+-- 1.19 - Prove gcd(a_n, a_n + 1) = 1 for the fib sequence
+
+def fib : ℕ -> ℤ
+| 0 => 1
+| 1 => 1
+| (n + 2) => fib (n + 1) + fib n
+
+example : fib 7 = 21 := by rfl
+
+example : 1 + 1 = 2 := by exact Nat.one_add 1
+
+lemma fib_zero : fib 0 = 1 := by rfl
+lemma fib_one : fib 1 = 1 := by rfl
+lemma fib_sub : fib (n + 2) - fib (n + 1) = fib n := by
+  rw [fib]; ring
+
+-- Thanks Claude
+theorem fib_gt_0 : ∀ n, fib n > 0
+| 0 => by unfold fib; linarith
+| 1 => by unfold fib; linarith
+| n + 2 => by
+  have ih1 := fib_gt_0 (n + 1)
+  have ih2 := fib_gt_0 n
+  rw [fib]
+  linarith
+
+-- approach: show a_n * a_n - 3 - a_{n-1} a_{n-2} = ± 1
+-- Int.gcd_dvd_iff is the way we'll do it
+
+abbrev fib_diff (n : ℕ) : ℤ :=
+  (fib (n + 3) * fib n) - fib (n + 2) * fib (n + 1)
+
+lemma not_even_succ {n : ℤ} : Even n -> ¬ Even ( n + 1) := by
+  intro ⟨a, _⟩ ⟨x, _⟩
+  omega
+
+lemma not_odd_succ {n : ℤ} : Odd n -> ¬ Odd ( n + 1) := by
+  intro ⟨a, _⟩ ⟨x, _⟩
+  omega
+
+lemma odd_pred {n : ℕ} : Odd (n + 1) -> Even n := by
+  intro ⟨a, _⟩
+  exact ⟨a, by omega⟩
+
+lemma even_pred {n : ℕ} : Even (n + 1) -> Odd n := by
+  intro ⟨a, _⟩
+  exact ⟨a - 1, by omega⟩
+
+example : (a + b) * c = a * c + b * c := by exact Int.add_mul a b c
+example : (-a + b) = -(a - b) := by
+  rw [neg_add_eq_sub a b]
+  exact Eq.symm (Int.neg_sub a b)
+
+theorem parity_implies_fib_diff_value (n : ℕ) :
+  (Odd n → fib_diff n = -1) ∧ (Even n → fib_diff n = 1) := by
+  induction n with
+  | zero =>
+      exact ⟨by (intro _; exfalso; tauto), by (intro _; rfl)⟩
+  | succ n ih =>
+      rcases (Int.even_or_odd n) with even | odd
+      · obtain ih := by
+          rw [Int.even_coe_nat] at even
+          exact (And.right ih even)
+        refine ⟨?_, ?_⟩
+        · intro _
+          rw [fib_diff]
+          rw [show fib (n + 1 + 3) * fib (n + 1) = (fib (n + 3) + fib (n + 2)) * fib (n + 1)
+            by exact Int.neg_inj.mp rfl]
+          rw [show fib (n + 1 + 2) * fib (n + 1 + 1) = fib (n + 3) * (fib (n + 1) + fib n)
+            by exact Int.neg_inj.mp rfl]
+          ring_nf -- must undo the weird pluses now
+          repeat rw [<- add_comm n]
+          rw [neg_add_eq_sub, <- Int.neg_sub]
+          rw [<- fib_diff, ih]
+        · intro even_n_plus_one
+          rw [<- Int.even_coe_nat] at even_n_plus_one
+          apply not_even_succ at even
+          contradiction
+      · obtain ih := by
+          rw [Int.odd_coe_nat] at odd
+          exact (And.left ih odd)
+        refine ⟨?_, ?_⟩
+        · intro odd_n_plus_one
+          rw [<- Int.odd_coe_nat] at odd_n_plus_one
+          apply not_odd_succ at odd
+          contradiction
+        · intros
+          rw [fib_diff]
+          rw [show fib (n + 1 + 3) * fib (n + 1) = (fib (n + 3) + fib (n + 2)) * fib (n + 1)
+            by exact Int.neg_inj.mp rfl]
+          rw [show fib (n + 1 + 2) * fib (n + 1 + 1) = fib (n + 3) * (fib (n + 1) + fib n)
+            by exact Int.neg_inj.mp rfl]
+          ring_nf -- must undo the weird pluses now
+          repeat rw [<- add_comm n]
+          rw [neg_add_eq_sub, <- Int.neg_sub]
+          rw [<- fib_diff, ih]
+          exact Int.neg_neg 1
+
+-- actual Exercise 1.19
+
+example (a : ℕ) (h : a ∣ 1) : ↑a ∣ (1 : ℤ) := by exact Int.ofNat_dvd_left.mpr h
+
+-- Int.gcd_dvd_iff is the way we'll do it
+
+theorem linear_combo_one_forces_gcd {a b : ℤ} :
+  (∃ x y, a * x + b * y = 1) → a.gcd b = 1 := by
+  intro ⟨x, y, h⟩
+  have : ↑(a.gcd b) ∣ (1 : ℤ) := by
+    have ha_dvd : ↑(a.gcd b) ∣ a := Int.gcd_dvd_left a b
+    have hb_dvd : ↑(a.gcd b) ∣ b := Int.gcd_dvd_right a b
+    rw [← h]
+    exact gcd_div_linear_combo a b x y
+  apply Int.eq_one_of_dvd_one (by omega) at this
+  omega
+
+theorem linear_combo_minus_one_forces_gcd {a b : ℤ} :
+  (∃ x y, a * x + b * y = -1) → a.gcd b = 1 := by
+  intro ⟨x, y, h⟩
+  apply linear_combo_one_forces_gcd
+  refine ⟨-x, -y, ?_⟩
+  grind
+
+-- so this is fine but doesn't handle the lower fib cases
+example {n : ℕ} : (fib (n + 3)).gcd (fib (n + 2)) = 1 := by
+  rcases (Int.even_or_odd n) with even | odd
+  · have : (fib_diff n = 1) := by
+      obtain ⟨_, l⟩ := parity_implies_fib_diff_value n
+      rw [Int.even_coe_nat] at even
+      exact (l even)
+    apply linear_combo_one_forces_gcd
+    use fib n, -fib (n + 1)
+    rw [show fib (n + 2) * (-fib (n + 1)) = -(fib (n + 2) * fib (n + 1)) by ring]
+    rw [Int.even_coe_nat] at even
+    rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.2 even]
+  · apply linear_combo_minus_one_forces_gcd
+    refine ⟨fib n, - 1 * fib (n + 1), ?_⟩
+    rw [show fib (n + 2) * (-1 * fib (n + 1)) =  - (fib (n + 2) * fib (n + 1)) by ring]
+    rw [Int.odd_coe_nat] at odd
+    rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.1 odd]
 end
