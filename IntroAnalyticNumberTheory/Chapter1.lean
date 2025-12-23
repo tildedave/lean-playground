@@ -637,21 +637,24 @@ theorem linear_combo_minus_one_forces_gcd {a b : ℤ} :
   refine ⟨-x, -y, ?_⟩
   grind
 
--- so this is fine but doesn't handle the lower fib cases
-example {n : ℕ} : (fib (n + 3)).gcd (fib (n + 2)) = 1 := by
-  rcases (Int.even_or_odd n) with even | odd
-  · have : (fib_diff n = 1) := by
-      obtain ⟨_, l⟩ := parity_implies_fib_diff_value n
+-- full statement of 1.19 \yay/
+example {n : ℕ} : (fib (n + 1)).gcd (fib n) = 1 := by
+  rcases n with _ | _ | n
+  · rfl
+  · rfl
+  · rcases (Int.even_or_odd n) with even | odd
+    · have : (fib_diff n = 1) := by
+        obtain ⟨_, l⟩ := parity_implies_fib_diff_value n
+        rw [Int.even_coe_nat] at even
+        exact (l even)
+      apply linear_combo_one_forces_gcd
+      use fib n, -fib (n + 1)
+      rw [show fib (n + 2) * (-fib (n + 1)) = -(fib (n + 2) * fib (n + 1)) by ring]
       rw [Int.even_coe_nat] at even
-      exact (l even)
-    apply linear_combo_one_forces_gcd
-    use fib n, -fib (n + 1)
-    rw [show fib (n + 2) * (-fib (n + 1)) = -(fib (n + 2) * fib (n + 1)) by ring]
-    rw [Int.even_coe_nat] at even
-    rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.2 even]
-  · apply linear_combo_minus_one_forces_gcd
-    refine ⟨fib n, - 1 * fib (n + 1), ?_⟩
-    rw [show fib (n + 2) * (-1 * fib (n + 1)) =  - (fib (n + 2) * fib (n + 1)) by ring]
-    rw [Int.odd_coe_nat] at odd
-    rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.1 odd]
+      rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.2 even]
+    · apply linear_combo_minus_one_forces_gcd
+      refine ⟨fib n, - 1 * fib (n + 1), ?_⟩
+      rw [show fib (n + 2) * (-1 * fib (n + 1)) =  - (fib (n + 2) * fib (n + 1)) by ring]
+      rw [Int.odd_coe_nat] at odd
+      rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.1 odd]
 end
