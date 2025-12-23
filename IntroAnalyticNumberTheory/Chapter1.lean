@@ -425,6 +425,40 @@ example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
 
 example (a b c : ℕ) : a * (b + c) = a * b + a * c := by exact Nat.mul_add a b c
 
+-- Exercise 1.15. Prove every n ≥ 12 is the sum of two composite numbers.
+
+theorem composite_even (a : ℤ) (ha : a > 2) : Even a -> Composite a := by
+  rintro ⟨h⟩
+  refine ⟨2, h, ?_, ?_, by grind⟩
+  all_goals {
+    rw [Int.isUnit_iff]
+    push_neg
+    refine ⟨by linarith, by linarith⟩
+  }
+
+theorem even_four : Even (4 : ℤ) := by rw [Int.even_iff]; dsimp
+theorem odd_nine : Odd (9 : ℤ) := by rw [Int.odd_iff]; dsimp
+
+theorem composite_four : Composite 4 := by
+  refine composite_even 4 (by linarith) (even_four)
+
+theorem composite_nine : Composite 9 := by
+  refine ⟨3, 3, by rw [Int.isUnit_iff]; tauto, by rw [Int.isUnit_iff]; tauto, by dsimp⟩
+
+example (n : ℤ) (ha : n ≥ 12) : ∃ a b, Composite a ∧ Composite b ∧ a + b = n := by
+  rcases (Int.even_or_odd n) with even | odd
+  · refine ⟨n - 4, 4, ?_, composite_four, by ring⟩
+    apply composite_even _ (by omega)
+    rw [Int.even_sub]
+    exact ⟨fun _ ↦ even_four, fun _ ↦ even⟩
+  · refine ⟨n - 9, 9, ?_, composite_nine, by ring⟩
+    apply composite_even _ (by omega)
+    rw [Int.even_sub']
+    exact ⟨fun _ ↦ odd_nine, fun _ ↦ odd⟩
+
+  -- argument here is:
+  -- if n is even, n = n - 4 + 4
+  -- if n is odd, n = (n - 9) + 9 -> n - 9 is even so composite.
 
 -- Exercise 1.16. Prove that if 2^n - 1 is prime, then n is prime.
 -- this is a contrapositive statement
