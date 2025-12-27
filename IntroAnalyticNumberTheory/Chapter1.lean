@@ -662,37 +662,6 @@ example {n : ℕ} : (fib (n + 1)).gcd (fib n) = 1 := by
 
 -- Exercise 1.21
 
--- @[simp]
--- theorem lcm_abs (a b : ℤ) : |a|.lcm b = a.lcm b := by sorry
-
--- theorem gcd_lcm_right (a b c : ℤ) :
---   ((a.gcd b) : ℤ).lcm c = (a.lcm c).gcd (b.lcm c) := by
---   by_cases h : (a = 0)
---   · rw [h]; simp
---   · by_cases h' : (b = 0)
---     · rw [h']; simp
---     · by_cases h'' : (c = 0)
---       · rw [h'']; simp
---       · repeat rw [Int.lcm_eq_mul_div]
---         rw [show a.natAbs * c.natAbs / a.gcd c = (a.natAbs / a.gcd c) * c.natAbs by
---           refine Nat.mul_div_right_comm ?_ c.natAbs
---           exact Int.gcd_dvd_natAbs_left a c]
---         rw [show b.natAbs * c.natAbs / b.gcd c = (b.natAbs / b.gcd c) * c.natAbs by
---           refine Nat.mul_div_right_comm ?_ c.natAbs
---           exact Int.gcd_dvd_natAbs_left b c]
---         rw [Nat.gcd_mul_right _ c.natAbs _]
-        -- cool.
-        -- next step is something that lets me pull a, b out of the numerators
-        -- not clear what that is.
-
--- theorem lcm_gcd_right (a b c : ℤ) : ((a.lcm b) : ℤ).gcd c = (a.gcd c).lcm (b.gcd c) := by
---   sorry
-
--- -- Exercise 1.22 - a.gcd b = (a + b, a.lcm b)
-
--- -- this probably follows from Exercise 1.21(c)
--- example (a b : ℤ) : a.gcd b = (a + b, a.lcm b) := by sorry
-
 -- Too much of a pain, will revisit :-)
 
 -- Exercise 1.22
@@ -768,5 +737,9 @@ example (a b : ℤ) : a.gcd b = (a + b).gcd (a.lcm b) := by
 -- sage: 1484 +  3780
 -- 5264
 
+
+-- Exercise 1.24 - if (a, b) = 1 then there exist x, y, x > 0, y > 0 so that ax - by = 1
+-- How can we see this?
+-- We have (possibly negative) ax + by = 1
 
 end
