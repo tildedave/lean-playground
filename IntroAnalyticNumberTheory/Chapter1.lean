@@ -245,7 +245,9 @@ example (h : RelativelyPrime a b) : (a + b).gcd (a - b) = 1 ∨ (a + b).gcd (a -
 -- then proof by cases.  possible but annoying, I'll return to this.
 
 -- Exercise 1.6
-example (h : RelativelyPrime a b) (h' : d ∣ (a + b)) : RelativelyPrime d a := by
+theorem relprime_implies_sum_relprime
+  (h : RelativelyPrime a b)
+  (h' : d ∣ (a + b)) : RelativelyPrime d a := by
   obtain ⟨k, hk⟩ := h'
   apply Nat.eq_one_of_dvd_one
   rw [RelativelyPrime_def, Int.gcd_eq_one_iff] at h
@@ -657,4 +659,114 @@ example {n : ℕ} : (fib (n + 1)).gcd (fib n) = 1 := by
       rw [show fib (n + 2) * (-1 * fib (n + 1)) =  - (fib (n + 2) * fib (n + 1)) by ring]
       rw [Int.odd_coe_nat] at odd
       rw [add_comm, neg_add_eq_sub, <- fib_diff, parity_implies_fib_diff_value n |>.1 odd]
+
+-- Exercise 1.21
+
+-- @[simp]
+-- theorem lcm_abs (a b : ℤ) : |a|.lcm b = a.lcm b := by sorry
+
+-- theorem gcd_lcm_right (a b c : ℤ) :
+--   ((a.gcd b) : ℤ).lcm c = (a.lcm c).gcd (b.lcm c) := by
+--   by_cases h : (a = 0)
+--   · rw [h]; simp
+--   · by_cases h' : (b = 0)
+--     · rw [h']; simp
+--     · by_cases h'' : (c = 0)
+--       · rw [h'']; simp
+--       · repeat rw [Int.lcm_eq_mul_div]
+--         rw [show a.natAbs * c.natAbs / a.gcd c = (a.natAbs / a.gcd c) * c.natAbs by
+--           refine Nat.mul_div_right_comm ?_ c.natAbs
+--           exact Int.gcd_dvd_natAbs_left a c]
+--         rw [show b.natAbs * c.natAbs / b.gcd c = (b.natAbs / b.gcd c) * c.natAbs by
+--           refine Nat.mul_div_right_comm ?_ c.natAbs
+--           exact Int.gcd_dvd_natAbs_left b c]
+--         rw [Nat.gcd_mul_right _ c.natAbs _]
+        -- cool.
+        -- next step is something that lets me pull a, b out of the numerators
+        -- not clear what that is.
+
+-- theorem lcm_gcd_right (a b c : ℤ) : ((a.lcm b) : ℤ).gcd c = (a.gcd c).lcm (b.gcd c) := by
+--   sorry
+
+-- -- Exercise 1.22 - a.gcd b = (a + b, a.lcm b)
+
+-- -- this probably follows from Exercise 1.21(c)
+-- example (a b : ℤ) : a.gcd b = (a + b, a.lcm b) := by sorry
+
+-- Too much of a pain, will revisit :-)
+
+-- Exercise 1.22
+
+theorem nat_mul_int_natabs (a : ℕ) (b : ℤ) : a * b.natAbs = (↑a * b).natAbs := by
+  rw [Int.natAbs_mul]; dsimp
+
+theorem gcd_implies_remainders_relprime (a b : ℤ) (ha : a ≠ 0):
+  RelativelyPrime (a / a.gcd (b)) (b / a.gcd (b)) := by
+  unfold RelativelyPrime
+  rw [Int.gcd_ediv (Int.gcd_dvd_left _ _) (Int.gcd_dvd_right _ _)]
+  exact Nat.div_self (Int.gcd_pos_of_ne_zero_left b ha)
+
+-- we'll use this and relprime_implies_sum_relprime to show
+
+lemma relprime_sum_and_product {a b : ℤ} :
+  RelativelyPrime a b -> RelativelyPrime (a + b) (a * b) := by
+  unfold RelativelyPrime
+  intro h
+  rw [Nat.eq_one_iff_not_exists_prime_dvd]
+  intro p pp pdiv
+  apply (Nat.Prime.ne_one pp)
+  apply (Nat.eq_one_of_dvd_one)
+  obtain ⟨p_div_a_b, p_div_ab⟩ := by
+    rw [Int.dvd_gcd_iff] at pdiv
+    exact pdiv
+  rcases (Int.Prime.dvd_mul pp p_div_ab) with p_div_a | p_div_b
+  · have p_div_a' : ↑p ∣ a := by exact Int.ofNat_dvd_left.mpr p_div_a
+    have p_div_b : ↑p ∣ b := by exact (Int.dvd_iff_dvd_of_dvd_add p_div_a_b).mp p_div_a'
+    rw [Int.gcd_eq_one_iff] at h
+    exact Int.ofNat_dvd.mp (h (↑p) p_div_a' p_div_b)
+  · have p_div_b' : ↑p ∣ b := by exact Int.ofNat_dvd_left.mpr p_div_b
+    have p_div_a : ↑p ∣ a := by exact (Int.dvd_iff_dvd_of_dvd_add p_div_a_b).mpr p_div_b'
+    rw [Int.gcd_eq_one_iff] at h
+    exact Int.ofNat_dvd.mp (h (↑p) p_div_a p_div_b')
+
+example (a b : ℤ) : a.gcd b = (a + b).gcd (a.lcm b) := by
+  by_cases h : (a = 0)
+  · rw [h, Int.zero_lcm, zero_add, Int.gcd_comm]; tauto
+  · by_cases h' : (b = 0)
+    · rw [h', Int.lcm_zero, add_zero]; tauto
+    · obtain ⟨k, hk⟩ := Int.gcd_dvd_left a b
+      obtain ⟨j, hj⟩ := Int.gcd_dvd_right a b
+      rw [Int.lcm_eq_mul_div]
+      set d := a.gcd b
+      have d_gt_0 : d > 0 := by exact Int.gcd_pos_of_ne_zero_left b h
+      rw [Int.gcd_eq_natAbs]
+      rw [show a.natAbs * b.natAbs / d = (d * (k * j)).natAbs by
+        rw [hk, hj,<-  Int.natAbs_mul]
+        refine Eq.symm (Nat.eq_div_of_mul_eq_right (by linarith) ?_)
+        have : 0 <= d := by omega
+        rw [nat_mul_int_natabs]
+        ring_nf]
+      dsimp
+      rw [<- Int.gcd_eq_natAbs_gcd_natAbs, hk, hj, <- left_distrib, Int.gcd_mul_left]
+      have dneq_zero : ↑d ≠ 0 := by exact Int.gcd_ne_zero_right h'
+      rw [show k = a / ↑d by
+        exact Int.eq_ediv_of_mul_eq_right (by omega) (id (Eq.symm hk))]
+      rw [show j = b / ↑d by
+        exact Int.eq_ediv_of_mul_eq_right (by omega) (id (Eq.symm hj))]
+      rw [show (a / ↑d + b / ↑d).gcd (a / ↑d * (b / ↑d)) = 1 by
+        -- a = a/↑d, b = b/↑d
+        apply relprime_sum_and_product
+        apply gcd_implies_remainders_relprime
+        exact h
+      ]
+      dsimp; ring
+
+-- Exercise 1.23
+-- Answer is
+-- sage: lcm(1484, 3780)
+-- 200340
+-- sage: 1484 +  3780
+-- 5264
+
+
 end
