@@ -737,9 +737,107 @@ example (a b : ℤ) : a.gcd b = (a + b).gcd (a.lcm b) := by
 -- sage: 1484 +  3780
 -- 5264
 
-
--- Exercise 1.24 - if (a, b) = 1 then there exist x, y, x > 0, y > 0 so that ax - by = 1
+-- Exercise 1.25 - if (a, b) = 1 then there exist x, y, x > 0, y > 0 so that ax - by = 1
 -- How can we see this?
--- We have (possibly negative) ax + by = 1
+-- We have ax + by = 1
+-- "All integers are positive."
+-- Lean should be able to see that they can't both be positive, and both can't be negative.
+-- Obviously one is positive and one is negative already.  So if the left one
+-- is positive and the right one is negative we already have it.
+-- Therefore we only have to consider left negative and right positive.  In that
+-- case we know (-x)a + by = 1
+-- OK so the idea is to find an n so that (ax + abn) - (by - abn) puts
+-- (ax + abn) positive and (by - abn) negative.  Lean will ask us to find an
+-- explicit n so that ax + abn is positive and by - abn negative.  OK that
+-- seems fine.
+
+example {a b : ℤ} (h : a.gcd b = 1) : (a.gcd b ∣ 1) := by exact Nat.dvd_one.mpr h
+
+example {a : ℤ} : a < 0 ∨ a = 0 ∨ a > 0 := by exact Int.lt_trichotomy a 0
+
+example {a b : ℤ}
+  (h : a.gcd b = 1) (ha : a > 0) (hb : b > 0) :
+  ∃ x > 0, ∃ y > 0, a * x - b * y = 1 := by
+  obtain ⟨x, y, hxy⟩ := by
+    rw [<- Nat.dvd_one] at h
+    rw [Int.gcd_dvd_iff] at h
+    exact h
+  by_cases a_b_eq_1 : (a = 1 ∨ b = 1)
+  · rcases a_b_eq_1 with a_eq_1 | b_eq_1
+    · rw [a_eq_1]
+      refine ⟨b + 1, by omega, 1, by omega, by ring⟩
+    · rw [b_eq_1]
+      ring_nf
+      refine ⟨2, by omega, 2 * a - 1, by omega, by ring⟩
+  · rcases (Int.lt_trichotomy x 0) with x_lt | x_zero | x_gt
+    · rcases (Int.lt_trichotomy y 0) with y_lt | y_zero | y_gt
+      · exfalso
+        nlinarith
+      · exfalso
+        nlinarith
+      · -- this is the only real case
+        -- OK so the idea is to find an n so that (ax + abn) - by - abn puts
+        -- (ax + abn) positive and (by - abn) negative.  Lean will ask us to find an
+        -- explicit n so that ax + abn is positive and by - abn negative.  OK that
+        -- seems fine.
+        -- want both x + bn > 0 and y + ab < 0
+        have b_gt_1 : b > 1 := by omega
+        have a_gt_1 : a > 1 := by omega
+        have x_gt_zero : x + b * (-x) > 0 := by nlinarith
+        have : y - a * y < 0 := by nlinarith
+        have exists_n : ∃ (n : ℕ), x + b * n > 0 ∧ y - a * n < 0 := by
+          use (max (-x) y).toNat
+          constructor
+          -- Claude spit this out
+          · -- x + b * ↑(max (-x) y).toNat > 0
+            have h1 : -x ≤ (max (-x) y).toNat := by
+              calc -x ≤ max (-x) y := by omega -- le_max_left (-x) y
+                    _ ≤ (max (-x) y).toNat := by omega
+            calc x + b * ↑(max (-x) y).toNat
+                ≥ x + b * -x := by nlinarith [hb, h1]
+              _ > 0 := x_gt_zero
+          · -- y - a * ↑(max (-x) y).toNat < 0
+            have h2 : y ≤ (max (-x) y).toNat := by
+              calc y ≤ max (-x) y := le_max_right (-x) y
+                  _ ≤ (max (-x) y).toNat := by omega
+            calc y - a * ↑(max (-x) y).toNat
+                ≤ y - a * y := by nlinarith [ha, h2]
+              _ < 0 := this
+        set n := Nat.find exists_n with hn_def
+        have hn : x + b * n > 0 ∧ y - a * n < 0 := hn_def ▸ Nat.find_spec exists_n
+        refine ⟨x + b * n, by omega, -(y - a * n), by omega, ?_⟩
+        ring_nf
+        tauto
+    · rw [x_zero] at hxy; ring_nf at hxy; symm at hxy
+      rw [Int.mul_eq_one_iff_eq_one_or_neg_one] at hxy
+      rcases hxy with l | r
+      · obtain ⟨q, _⟩ := l
+        rw [q]
+        refine ⟨1, by omega, a - 1, by omega, ?_⟩
+        ring_nf
+      · exfalso
+        nlinarith
+    · rcases (Int.lt_trichotomy y 0) with y_lt | y_zero | y_gt
+      · refine ⟨x, by omega, -y, by omega, ?_⟩
+        rw [Int.mul_neg, Int.sub_neg]
+        tauto
+      · rw [y_zero] at hxy; ring_nf at hxy; symm at hxy
+        rw [Int.mul_eq_one_iff_eq_one_or_neg_one] at hxy
+        rcases hxy with l | r
+        · obtain ⟨q, _⟩ := l
+          rw [q]
+          refine ⟨b + 1, by omega, 1, by omega, ?_⟩
+          ring_nf
+        · exfalso
+          nlinarith
+      · exfalso
+        -- Claude suggested this to show linarith, it works (its other 3
+        -- suggestions did not work.)  Also had to use grind instead of
+        -- linarith.
+        -- we have ax + by = 1, a > 1 , b > 1, x, y > 0, this should be
+        -- impossible.
+        have : a * x + b * y ≥ a * 1 + b * 1 := by
+          apply add_le_add <;> apply mul_le_mul_of_nonneg_left <;> linarith
+        grind
 
 end
