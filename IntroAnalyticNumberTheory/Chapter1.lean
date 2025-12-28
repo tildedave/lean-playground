@@ -43,7 +43,7 @@ lemma rel_prime_mult_elim2 : RelativelyPrime (a * c) (b * d) → RelativelyPrime
   exact h
 
 -- Exercise 1.1
-example (h : RelativelyPrime a b) :
+theorem exercise_1_1 (h : RelativelyPrime a b) :
   (c ∣ a) ∧ (d ∣ b) → (RelativelyPrime c d) := by
   intro ⟨⟨p, a_def⟩, ⟨q, b_def⟩⟩
   rw [a_def] at h
@@ -60,7 +60,7 @@ example (h : RelativelyPrime a b) :
 -- therefore gcd a bc | 1
 -- therefore gcd a bc = 1
 -- therefore (a,bc) rel prime
-lemma rel_prime_mult_right
+theorem exercise_1_2
   (h : RelativelyPrime a b)
   (h' : RelativelyPrime a c) : RelativelyPrime a (b * c) := by
   unfold RelativelyPrime
@@ -83,7 +83,9 @@ lemma rel_prime_mult_right
   rw [<- Int.ofNat_dvd, <- bar]
   apply gcd_div_linear_combo
 
-example {x : ℤ} {y : ℕ} : x^(y + 1) = x^y * x := Int.pow_succ x y
+theorem rel_prime_mult_right
+  (h : RelativelyPrime a b)
+  (h' : RelativelyPrime a c) : RelativelyPrime a (b * c) := by exact exercise_1_2 a b c h h'
 
 lemma rel_prime_power {n : ℕ} (h : RelativelyPrime a b) : RelativelyPrime a (b^(n + 1)) := by
   induction n with
