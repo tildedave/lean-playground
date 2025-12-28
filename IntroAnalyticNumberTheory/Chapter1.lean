@@ -93,35 +93,29 @@ lemma rel_prime_power {n : ℕ} (h : RelativelyPrime a b) : RelativelyPrime a (b
       apply rel_prime_mult_right _ _ _ h ih
 
 -- Exercise 1.3 (exact except for the bounds, need to figure out how to do this)
-example (h : RelativelyPrime a b)
-  (n k : ℕ) : RelativelyPrime (a^(n + 1)) (b^(k + 1)) := by
+theorem rel_prime_succ_power {a b : ℤ} {n k : ℕ} (h : RelativelyPrime a b)
+  : RelativelyPrime (a^(n + 1)) (b^(k + 1)) := by
   have : RelativelyPrime a (b^(k + 1)) := rel_prime_power _ _ h
   have : RelativelyPrime (b^(k + 1)) a := by rw [rel_prime_swap]; exact this
   have : RelativelyPrime (b^(k + 1)) (a^(n + 1)) := (rel_prime_power _ _ this)
   rw [rel_prime_swap]; exact this
+
+-- Exercise 1.3 (with the bounds)
+theorem rel_prime_both_powers {a b : ℤ} {n k : ℕ} (h : RelativelyPrime a b)
+  : RelativelyPrime (a^n) (b^k) := by
+  rcases n with _ | _
+  · rcases k with _ | _
+    · ring_nf; rfl
+    · ring_nf; unfold RelativelyPrime; rw [Int.one_gcd]
+  · rcases k with _ | _
+    · ring_nf; unfold RelativelyPrime; rw [Int.gcd_one]
+    · apply rel_prime_succ_power h
 
 example (h : a ∣ c) (h' : a ∣ b + c) : a ∣ b := by
   exact (Int.dvd_iff_dvd_of_dvd_add h').mpr h
 
 example (h : a ∣ c) (h' : a ∣ b) : a ∣ (b + c) := by
   exact (Int.dvd_add_right h').mpr h
-
--- Claude's version - which does not compile
--- theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
---   (h : a ∣ p * b) : (a ∣ b) ∨ ((a / p) ∣ b ∧ ↑p ∣ a) := by
---   obtain ⟨x, hx⟩ := h
---   have p_nz : (p : ℤ) ≠ 0 := Int.natCast_ne_zero_iff_pos.mpr pp.pos
---   by_cases h' : (p : ℤ) ∣ a
---   · right
---     exact ⟨⟨x, Int.eq_mul_div_of_mul_eq_mul_of_dvd_left p_nz h' hx⟩, h'⟩
---   · left
---     have : (p : ℤ) ∣ x := by
---       rcases Int.Prime.dvd_mul' pp ⟨b, hx⟩ with ha | hx
---       · exact absurd (Int.natCast_dvd_natCast.mpr (Int.natAbs_dvd.mp ha)) h'
---       · exact Int.natAbs_dvd.mp hx
---     refine ⟨x / p, ?_⟩
---     rw [mul_comm] at hx ⊢
---     exact Int.eq_mul_div_of_mul_eq_mul_of_dvd_left p_nz this hx
 
 theorem int_dvd_prime_product {p : ℕ} {a b : ℤ} (pp : Nat.Prime p)
   (h : a ∣ p * b) : (a ∣ b) ∨ ((a / p) ∣ b ∧ ↑p ∣ a) := by
@@ -426,6 +420,84 @@ example (n : ℤ) (hn : n > 1) : Composite (n^4 + 4) := by
   }
 
 example (a b c : ℕ) : a * (b + c) = a * b + a * c := by exact Nat.mul_add a b c
+
+-- Exercise 1.13. (a) If (a,b) = 1 and (a/b)^m  = n, prove b = 1
+-- so a^m = n b^m
+-- p divides a^m, so p divides a, so p^m divides n.
+-- true for every prime, so a^m = n, so b = 1.
+-- how can I see this with Lean?
+
+-- from Claude
+lemma coprime_divisibility {a b n : ℤ} (hb : b > 0)
+    (coprime : RelativelyPrime a b) (h : a = n * b) : b = 1 := by
+  -- From a = n * b, we have b | a
+  rw [mul_comm] at h
+  have b_dvd_a : b ∣ a := ⟨n, h⟩
+  -- Since gcd(a, b) = 1 and b | a, we need b | gcd(a, b) = 1
+  have b_dvd_gcd : b ∣ Int.gcd a b := by
+    apply Int.dvd_coe_gcd b_dvd_a (Int.dvd_refl b)
+    -- apply Int.dvd_gcd b_dvd_a (dvd_refl b)
+  rw [coprime] at b_dvd_gcd
+  -- So b | 1
+  have b_dvd_one : b ∣ 1 := b_dvd_gcd
+  -- Since b > 0 and b | 1, we have b = 1
+  apply Int.eq_one_of_dvd_one (by omega) b_dvd_one
+
+-- This is Nat.pow_eq_one but upcasted to int.  Claude helped here so I
+-- assume this could be shorter.
+lemma int_pow_eq_one {a : ℤ} {m : ℕ} (ha : a > 0) (hm : m > 0) (h : a ^ m = 1) : a = 1 := by
+  obtain ⟨n, rfl⟩ := Int.eq_ofNat_of_zero_le (le_of_lt ha)
+  have : n = 1 := by
+    have : n^m = 1 := by exact Eq.symm ((fun {m n} ↦ Int.ofNat_inj.mp) (id (Eq.symm h)))
+    rw [Nat.pow_eq_one] at this
+    omega
+  simp [this]
+
+lemma exercise_1_13_a (a b n : ℤ) (m : ℕ)
+  (bounds : a > 0 ∧ b > 0 ∧ m > 0 ∧ n > 0)
+  (h : RelativelyPrime a b) :
+  -- we can't exactly prove the theorem as stated because (a / b)^m is
+  -- truncated division.  I'll restate the theorem as a rational number and see
+  -- how that goes.
+  a^m = n * b ^ m → b = 1 := by
+  intro heq
+  have rp_powers : RelativelyPrime (a^m) (b^m) := by
+    apply rel_prime_both_powers h
+  have : m > 0 := by omega
+  apply int_pow_eq_one (by omega) this
+  exact coprime_divisibility (Int.pow_pos (by omega)) rp_powers heq
+
+-- too annoying for now
+-- example {a b : ℤ}  {n m : ℕ}
+--   (bounds: a > 0 ∧ b > 0 ∧ m > 0 ∧ n > 0)
+--   (h : RelativelyPrime a b) :
+--   (Rat.mk' a b.toNat (by omega)
+--     (by
+--       unfold RelativelyPrime at h
+--       rw [Nat.coprime_iff_gcd_eq_one]
+
+--     )
+--   )^m = Rat.ofInt n -> b = 1 := by sorry
+
+-- Exercise 1.13b
+-- If n is not the mth power of a positive integer, show that n^(1/m) is irrational.
+-- Really n^(1/m) is rational means n^(1/m) = p/q, e.g. there do not exist
+-- p, q for q^m n = p^m
+
+lemma exercise_1_13_b {n : ℤ} {m : ℕ}
+  (bounds : n > 0 ∧ m > 0) :
+  (¬∃a, a^m = n) → (¬(∃p > 0, ∃q > 0, RelativelyPrime p q ∧ q^m * n = p^m)) := by
+  contrapose
+  intro ⟨p, p_bound, q, q_bound, h, heq⟩
+  symm at heq
+  rw [mul_comm] at heq
+  refine ⟨p, ?_⟩
+  have : q = 1 := by
+    have : p > 0 ∧ q > 0 ∧ m > 0 ∧ n > 0 := by omega
+    apply exercise_1_13_a p q n m (by omega) h
+    tauto
+  rw [this, Int.one_pow, Int.mul_one] at heq
+  exact heq
 
 -- Exercise 1.15. Prove every n ≥ 12 is the sum of two composite numbers.
 
