@@ -923,5 +923,7 @@ theorem gcd_eq_one_iff_positive_linear_combo {a b : ℤ}
 -- Exercise 1.26
 -- a, b > 1
 -- If (a, b) = 1 and x^a = y^b then x = n^b and y = n^a for some n.
--- Relies on 1.25 (proved) and 1.13 (not proved yet)
+-- Relies on 1.25 (proved) and 1.13 (proved)
+
+
 end
