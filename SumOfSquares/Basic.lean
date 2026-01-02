@@ -18,15 +18,15 @@ example {a : ℕ} : (a = 1) ∨ (a ≠ 1) := by exact eq_or_ne a 1
 
 example {x y : ℕ} (h : ↑x ∣ ↑y) : (x ∣ y) := by exact (Nat.ModEq.dvd_iff rfl h).mp h
 
-lemma sum_of_squares_descent (N : ℤ) (h : SumOfSquares N) (q : ℕ)
-  (hq : Nat.Prime q ∧ (∃ x > 0, ∃ y > 0, x ^ 2 + y ^ 2 = (q : ℤ)) ∧ ↑q ∣ N) :
-  (SumOfSquares (N / q)) := by
-  obtain ⟨a, a_bound, b, b_bound, ab_coprime, hab⟩ := h
-  obtain ⟨qprime, ⟨x, x_bound, y, y_bound, hxy⟩, qdiv⟩ := hq
-  -- therefore we should have q divides (xb - ay) (xb + ay)
-  have q_div : ↑q ∣ (x * b - a * y) * (x * b + a * y) := by sorry
-  have xy_coprime : x.gcd y = 1 := by
-    -- x and y have to be coprime or else q has a nontrivial divisor.
+-- does not force coprime but this is a lemma
+def PrimeSumOfSquares (q : ℕ) : Prop
+  := Nat.Prime q ∧ (∃ x > 0, ∃ y > 0, x ^ 2 + y ^ 2 = (q : ℤ))
+
+-- x and y have to be coprime or else q has a nontrivial divisor.
+lemma prime_sumofsquares_coprime {q : ℕ} {x y : ℤ}
+  (qprime : Nat.Prime q) (hx : x > 0) (hy : y > 0)
+  (hq : x ^ 2 + y ^ 2 = (q : ℤ))
+  : x.gcd y = 1 := by
     rcases eq_or_ne (x.gcd y) 1 with h | impossible
     · exact h
     · exfalso
@@ -37,12 +37,21 @@ lemma sum_of_squares_descent (N : ℤ) (h : SumOfSquares N) (q : ℕ)
         · exact Int.dvd_mul_of_dvd_right (Int.gcd_dvd_left x y)
         · exact Int.dvd_mul_of_dvd_left (Int.gcd_dvd_right x y)
       have : (x.gcd y) ∣ q := by
-        rw [hxy] at this
+        rw [hq] at this
         exact Int.ofNat_dvd.mp this
       rw [Nat.dvd_prime qprime] at this
       rcases this with eq_1 | eq_p
       · tauto
-      · sorry
+      · nlinarith [Int.gcd_le_left y hx]
+
+lemma sum_of_squares_descent (N : ℤ) (h : SumOfSquares N) (q : ℕ)
+  (hq : PrimeSumOfSquares q ∧ ↑q ∣ N) :
+  (SumOfSquares (N / q)) := by
+  obtain ⟨a, a_bound, b, b_bound, ab_coprime, hab⟩ := h
+  obtain ⟨⟨qprime, ⟨x, x_bound, y, y_bound, hxy⟩⟩, qdiv⟩ := hq
+  -- therefore we should have q divides (xb - ay) (xb + ay)
+  have q_div : ↑q ∣ (x * b - a * y) * (x * b + a * y) := by sorry
+  have xy_coprime : x.gcd y = 1 := prime_sumofsquares_coprime qprime x_bound y_bound hxy
   have q_div_or : ↑q ∣ x * b - a * y ∨ ↑q ∣ x * b + a * y := by
     exact Int.Prime.dvd_mul' qprime q_div
   -- some wlog stuff I don't know how to fix here
