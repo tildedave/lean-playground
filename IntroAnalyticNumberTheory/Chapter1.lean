@@ -389,7 +389,8 @@ theorem lcm_square {a b : ℕ} : (a.lcm b * a.lcm b) = (a * a).lcm (b * b) := by
   repeat rw [<- Nat.pow_two]
   rw [Nat.pow_lcm_pow]
 
-example {a b n : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : b * b ∣ n ∧ ∀ a, a * a ∣ n → a^2 ≤ b^2)
+example {a b n : ℕ} (ha : a ≠ 0) (hb : b ≠ 0)
+  (h : b * b ∣ n ∧ ∀ a, a * a ∣ n → a ^ 2 ≤ b ^ 2)
   : a * a ∣ n → a ∣ b := by
   intro a_sq_div_n
   obtain ⟨bsq_div_n, bsq_maximal⟩ := h
@@ -743,7 +744,7 @@ example {n : ℕ} : (fib (n + 1)).gcd (fib n) = 1 := by
 theorem nat_mul_int_natabs (a : ℕ) (b : ℤ) : a * b.natAbs = (↑a * b).natAbs := by
   rw [Int.natAbs_mul]; dsimp
 
-theorem gcd_implies_remainders_relprime (a b : ℤ) (ha : a ≠ 0):
+theorem gcd_implies_remainders_relprime (a b : ℤ) (ha : a ≠ 0) :
   RelativelyPrime (a / a.gcd (b)) (b / a.gcd (b)) := by
   unfold RelativelyPrime
   rw [Int.gcd_ediv (Int.gcd_dvd_left _ _) (Int.gcd_dvd_right _ _)]
