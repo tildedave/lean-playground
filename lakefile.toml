@@ -1,7 +1,7 @@
 name = "lean-playground"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["SumOfSquares", "IntroAnalyticNumberTheory"]
+defaultTargets = ["SumOfSquares", "IntroAnalyticNumberTheory", "NumberFields"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`

@@ -104,7 +104,7 @@ lemma prime_sum_of_squares_neq_zero_left {x y : ℤ} {p : ℕ} (pp : Nat.Prime p
     rw [<- Int.ofNat_inj]
     exact h
 
-lemma sum_of_squares_descent (N : ℤ) (h : SumOfSquares N) (q : ℕ)
+lemma sum_of_squares_descent_helper (N : ℤ) (h : SumOfSquares N) (q : ℕ)
   (hq : PrimeSumOfSquares q ∧ ↑q ∣ N) :
   (SumOfSquares (N / q)) := by
   obtain ⟨a, b, ab_coprime, hab⟩ := h
@@ -171,3 +171,25 @@ lemma sum_of_squares_descent (N : ℤ) (h : SumOfSquares N) (q : ℕ)
             _ = (c * x - d * y)^2 + (d * x + c * y)^2 := by ring
             _ = a^2 + b^2 := by grind
       exact hab
+
+-- idea: define this process, say, there is a Least one, for that Least one
+-- it must be equal to a sum of squares, so it must be expressible in that
+-- form.
+-- let p be an odd prime dividing N = a^2 + b^2, where a and b are relatively
+-- prime. If a and b are changed by multiples
+-- of p, we still have p\ a^2 + b^2
+-- . We may thus assume that \a\ < p/2 and \b\ < p/2,
+-- which in turn implies that N < p
+-- 2/2. The new a and b may have a greatest common
+-- divisor d > 1, but p doesn't divide d, so that dividing a and b by d, we may assume
+-- that p | N, N < p
+-- 2/2, and N = a
+-- 2 + b2 where gcd (a, b) = 1. Then all prime divisors
+-- q / p of T V are less than p. If q were a sum of two squares, then Lemma 1.4 would
+-- show that N/q would be a multiple of p that is again a sum of two squares. If all such
+-- C. p = X2 + ny2 AND QUADRATIC RECIPROCITY 11
+-- g's were sums of two squares, then repeatedly applying Lemma 1.4 would imply that
+-- p itself was of the same form. So if p is not a sum of two squares, there must be a
+-- smaller prime q with the same property. Since there is nothing to prevent us from
+-- repeating this process indefinitely, we get an infinite decreasing sequence of prime
+-- numbers. This contradiction finishes the Descent Step
