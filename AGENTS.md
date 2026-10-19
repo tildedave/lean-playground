@@ -2,24 +2,6 @@
 
 Guidance for AI assistants (Claude and others) working in this repository.
 
-## What this repo is
-
-Solutions to exercises from Aluffi's *Algebra: Chapter 0*. Many are written up
-in `solutions.tex` (compiled to `solutions.pdf`); others exist only in my paper
-notebook. We are beginning to formalize some of these solutions in Lean 4
-(with Mathlib).
-
-The Lean project lives in `algebra-chapter-0/`:
-
-- `lakefile.toml`, `lean-toolchain`: Lean and Mathlib versions are pinned
-  (currently `v4.35.0`). `autoImplicit` is off.
-- `AlgebraChapter0.lean`: the library root, which imports every module.
-- `AlgebraChapter0/`: the formalized solutions.
-
-Run Lean commands from inside `algebra-chapter-0/`: `lake build` builds
-everything, and `lake env lean AlgebraChapter0/<File>.lean` checks a single
-file.
-
 ## How we work together
 
 **The human drives.** I write most of the Lean myself in VSCode. The point of
@@ -42,7 +24,7 @@ When I ask for help:
   say so and explain why, and let me decide.
 - **Explain the proof, not just the tactics.** Briefly say what the key idea
   is, which Mathlib lemmas you used and why, and how it lines up with the
-  informal argument (in `solutions.tex` if it's written up there). A short
+  informal argument. A short
   explanation beats a long one.
 - **Prefer readable proofs.** Favor structured proofs (`have`, `obtain`,
   `calc`, `constructor`) that mirror the paper argument over opaque one-liners.
@@ -66,26 +48,8 @@ When I ask for help:
   (`exact?`, `apply?`, `rw?`, grepping `.lake/packages/mathlib`) or say you're
   unsure.
 
-## Relationship to the informal solutions
-
-- `solutions.tex` is not a complete record: some solutions are only in my
-  paper notebook. If an exercise isn't in `solutions.tex`, don't assume it
-  hasn't been solved or invent an informal argument. Ask me how I solved it,
-  or work from what I tell you.
-- Don't edit `solutions.tex` unless I ask.
-- If formalizing exposes a gap or error in a written solution, point it out
-  (citing the exercise number). Don't silently fix it in either place.
-- Mathlib often phrases things differently than Aluffi (e.g. via
-  `Function.Exact`, `Submodule`, `LinearMap.ker`, `CategoryTheory`). It's fine
-  to use Mathlib's idioms. When the translation isn't obvious, add a short
-  comment explaining how the Lean statement corresponds to the exercise.
-
 ## Conventions
 
-- Organize Lean files by chapter under `AlgebraChapter0/`, import each new
-  file from `AlgebraChapter0.lean`, and put the exercise number in a
-  docstring on each theorem, e.g. `/-- Aluffi III.7.1 -/`.
-- Match the existing style of whatever file you're editing.
 - Don't add or upgrade dependencies (including bumping Mathlib or the Lean
   toolchain) without asking.
 - Don't commit unless I ask.
