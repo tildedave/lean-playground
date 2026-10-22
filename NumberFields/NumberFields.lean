@@ -4,6 +4,8 @@ import Mathlib.NumberTheory.NumberField.Basic
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 import Mathlib.FieldTheory.PrimitiveElement
 
+/-! Solutions to exercises from Marcus's Number Fields -/
+
 open IntermediateField Polynomial
 
 example (K : Type*) [Field K] [CharZero K] (x : K) (p q : ℚ)
@@ -16,12 +18,9 @@ example (K : Type*) [Field K] [CharZero K] (x : K) (p q : ℚ)
   push_cast
   linear_combination ((p.den : K) * q.den) * hroot - ((q.den : K) * x) * hp' - (p.den : K) * hq'
 
--- would like to simplify this to improve future arguments, for now nothing
-lemma exists_quadratic_of_finrank_eq_two (K : Type*) [Field K] [NumberField K]
-    (hK : Module.finrank ℚ K = 2) :
-    ∃ x : K, ℚ⟮x⟯ = ⊤ ∧ ∃ p q : ℚ, x ^ 2 + p * x + q = 0 := by sorry
-
--- geez
+-- geez this is pretty intense
+-- Marcus Number Fields Chapter 2 Exercise 1(a)
+-- "Show every number field of degree 2 over Q is one of the quadratic fields."
 theorem quadratic_field_eq_adjoin_sqrt (K : Type*) [Field K] [NumberField K]
     (hK : Module.finrank ℚ K = 2) :
     ∃ m : ℤ, ∃ α : K, α ^ 2 = m ∧ ℚ⟮α⟯ = ⊤ := by
@@ -63,3 +62,125 @@ theorem quadratic_field_eq_adjoin_sqrt (K : Type*) [Field K] [NumberField K]
       · exact mul_mem
           (mul_mem (IntermediateField.natCast_mem _ _) (IntermediateField.natCast_mem _ _))
           (IntermediateField.natCast_mem _ _)
+
+-- Marcus Number Fields Chapter 2 Exercise 1(b)
+-- Show every ℚ[√m] is distinct, e.g. if √n ∈ ℚ[√m], then m = n
+
+-- need this first
+theorem no_sqrt_is_rational {m : ℤ} (hm : m ≠ 1 ∧ Squarefree m)
+  : ∀ (b : ℚ), b^2 ≠ m := by
+    intro b hm'
+    have m_sqfree := hm.2
+    -- obtain ⟨m_neq_one, m_sqfree⟩ := hm
+    have msq : IsSquare (m : ℚ) := hm' ▸ IsSquare.sq b
+    -- alternatively
+    -- have msq: IsSquare (m : ℚ) := ⟨b, by rw [← hm, pow_two]⟩
+    obtain ⟨r, hr⟩ := Rat.isSquare_intCast_iff.mp msq
+    have hu : IsUnit r := m_sqfree r (by rw [hr])
+    rcases Int.isUnit_iff.mp hu with rfl | rfl <;> simp_all
+
+lemma sqrt_of_int_is_integral {K : Type*} [Field K] [CharZero K] {m : ℤ} {s : K}
+  (hm : Squarefree m) (hm1 : m ≠ 1) (hs : s ^ 2 = m)
+  : IsIntegral ℚ s ∧ minpoly ℚ s = X ^ 2 - C (m : ℚ) := by
+    constructor
+    · refine ⟨X^2 - C (m : ℚ), ?_, ?_⟩
+      · exact Polynomial.monic_X_pow_sub (by compute_degree; simp)
+      · rw [← aeval_def]; simp [hs]
+    · refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ ?_).symm
+      · exact X_pow_sub_C_irreducible_of_prime Nat.prime_two (no_sqrt_is_rational ⟨hm1, hm⟩)
+      · simp [hs]
+      · exact monic_X_pow_sub_C _ two_ne_zero
+
+-- need this second: if you're in a quadratic field, you can be written using the basis element
+lemma exists_rat_add_rat_mul_sqrt {K : Type*} [Field K] [CharZero K] {m : ℤ} {s : K}
+    (hm : Squarefree m) (hm1 : m ≠ 1) (hs : s ^ 2 = m)
+    (hdim : Module.finrank ℚ ℚ⟮s⟯ = 2) {t : K} (ht : t ∈ ℚ⟮s⟯) :
+    ∃ p q : ℚ, t = p + q * s := by
+    have s_integral := (sqrt_of_int_is_integral hm hm1 hs).1
+    set basis := adjoin.powerBasis s_integral
+    have hbasis_2 : basis.dim = 2 :=
+      by rw [adjoin.powerBasis_dim, ← adjoin.finrank s_integral, hdim]
+    obtain ⟨f, hf, hft⟩ := basis.exists_eq_aeval ⟨t, ht⟩
+    obtain ⟨q, p, rfl⟩ := exists_eq_X_add_C_of_natDegree_le_one (by omega : f.natDegree ≤ 1)
+    refine ⟨p, q, ?_⟩
+    have := congrArg Subtype.val hft
+    simpa [basis, Algebra.smul_def, add_comm] using this
+
+theorem quadratic_fields_are_unique {K : Type*} [Field K] [CharZero K] {m n : ℤ}
+  (hm : Squarefree m) (hm1 : m ≠ 1) (hn : Squarefree n) (hn1 : n ≠ 1)
+  {s t : K} (hs : s ^ 2 = m) (ht : t ^ 2 = n) (hmem : t ∈ ℚ⟮s⟯) :
+  n = m := by
+  have hdim : Module.finrank ℚ ℚ⟮s⟯ = 2 := by
+    obtain ⟨s_integral, s_minpoly⟩ := (sqrt_of_int_is_integral hm hm1 hs)
+    rw [adjoin.finrank s_integral, s_minpoly, natDegree_X_pow_sub_C]
+  obtain ⟨p, q, texpr⟩ := (exists_rat_add_rat_mul_sqrt hm hm1 hs hdim hmem)
+  -- OK write t = p + qs by previous lemma.  therefore n = t^2 = p^2 + 2pqs + q^2m
+  have : ↑n = p^2 + 2 * (p * q) * s + q^2 * ↑m := by grind
+  by_cases h : (↑p : K) * (↑q : K) = ↑0
+  · simp only [h, mul_zero, zero_mul, add_zero] at this
+    obtain hp | hq := mul_eq_zero.mp h
+    · simp only [hp, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_add] at this
+      have hQ : (n : ℚ) = q ^ 2 * m := by exact_mod_cast this
+      have hZ : (q.den : ℤ)^2 * n = (q.num)^2 * m := by
+        have : (q.den : ℚ)^2 * (n : ℚ) = (q.num : ℚ)^2 * (m : ℚ) := by
+          rw [← Rat.num_div_den q] at hQ
+          have : (q.den : ℚ) ≠ 0 := by exact_mod_cast q.den_ne_zero
+          rw [hQ]
+          field_simp
+        exact_mod_cast this
+      have : q.den = 1 := by
+        -- q divides m, so q in a unit
+        have hint : IsCoprime ↑(q.den ^ 2) (q.num ^ 2) := by
+          push_cast
+          exact IsCoprime.pow (Rat.isCoprime_num_den q).symm
+        have hdvd : (q.den  : ℤ)^2 ∣ q.num^2 * m := by
+          exact Dvd.intro n hZ
+        have : IsUnit (q.den : ℤ) := by
+          apply hm
+          rw [<- pow_two]
+          apply IsCoprime.dvd_of_dvd_mul_left hint
+          exact hdvd
+        exact ZMod.eq_one_of_isUnit_natCast this
+      -- because q.den = 1 then q.num = 1 too
+      simp only [this, Nat.cast_one, one_pow, one_mul] at hZ
+      have : IsUnit (q.num : ℤ) := by
+        apply hn
+        rw [<- pow_two]
+        symm at hZ
+        exact Dvd.intro m hZ
+      have qnumsq_one := by exact Int.isUnit_sq this
+      simp only [qnumsq_one, one_mul] at hZ
+      exact hZ
+    · exfalso
+      simp only [hq, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_mul,
+        add_zero] at this
+      -- so p.num and p.den are units
+      have hN : (p.den : ℤ)^2 * n = p.num^2 := by
+        have hQ : (n : ℚ) = p ^ 2 := by exact_mod_cast this
+        have hZ : (p.den : ℤ) ^ 2 * n = p.num ^ 2 := by
+          have : (p.den : ℚ) ^ 2 * n = (p.num : ℚ) ^ 2 := by
+            rw [← Rat.num_div_den p] at hQ
+            have : (p.den : ℚ) ≠ 0 := by exact_mod_cast p.den_ne_zero
+            rw [hQ]
+            field_simp
+          exact_mod_cast this
+        exact_mod_cast hZ
+      have : IsUnit (p.num : ℤ) := by
+        -- have : IsCoprime p.num p.den := Rat.isCoprime_num_den p
+        have : p.num ^ 2 ∣ (p.den : ℤ)^2 * n := by
+          simp_all only [ne_eq, zero_mul, add_zero, SubfieldClass.ratCast_mem, mul_zero,
+            Rat.cast_eq_zero, dvd_refl]
+        apply hn
+        rw [← pow_two]
+        exact IsCoprime.dvd_of_dvd_mul_left (IsCoprime.pow (Rat.isCoprime_num_den p)) this
+      rw [Int.isUnit_sq this] at hN
+      have hd : (p.den : ℤ) ^ 2 = 1 := Int.eq_one_of_mul_eq_one_right (by positivity) hN
+      rw [hd, one_mul] at hN
+      exact hn1 hN
+  · exfalso
+    set u := ((n : ℚ) - p^2 - q ^ 2 * (m : ℚ)) / (2 * p * q) with hu
+    apply no_sqrt_is_rational ⟨hm1, hm⟩ u
+    rw [hu]
+    have : s = (↑n - ↑p^2 - ↑q ^ 2 * ↑m) / (2 * p * ↑q) := by grind
+    rw [this] at hs
+    exact_mod_cast hs
