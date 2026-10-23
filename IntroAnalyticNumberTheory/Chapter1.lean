@@ -266,7 +266,7 @@ theorem not_squarefree_implies_divisor (n : ℕ)
   : ¬ Squarefree n → ∃ p, (Nat.Prime p) ∧ p * p ∣ n := by
   intro not_sqfree
   unfold Squarefree at not_sqfree
-  push_neg at not_sqfree
+  push Not at not_sqfree
   obtain ⟨x, x_div, hx⟩ := not_sqfree
   have x_ne_one : x ≠ 1 := fun x_eq_one => hx ⟨1, x_eq_one.symm⟩
   obtain ⟨p, pp, y, rfl⟩ := Nat.ne_one_iff_exists_prime_dvd.mp x_ne_one
@@ -371,7 +371,7 @@ example (n : ℕ) : ∃ a b, n = (a * a) * b ∧ Squarefree b := by
 
 theorem ndvd_impl_lcm_gt {a b : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : ¬a ∣ b) : b < a.lcm b := by
   by_contra hnlt
-  push_neg at hnlt
+  push Not at hnlt
   have hdvd : b ∣ a.lcm b := Nat.dvd_lcm_right a b
   have hlcm_pos : 0 < a.lcm b := Nat.lcm_pos
     (Nat.zero_lt_of_ne_zero ha)
@@ -509,7 +509,7 @@ theorem composite_even (a : ℤ) (ha : a > 2) : Even a -> Composite a := by
   refine ⟨2, h, ?_, ?_, by grind⟩
   all_goals {
     rw [Int.isUnit_iff]
-    push_neg
+    push Not
     refine ⟨by linarith, by linarith⟩
   }
 

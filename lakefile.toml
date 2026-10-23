@@ -2,6 +2,7 @@ name = "lean-playground"
 version = "0.1.0"
 keywords = ["math"]
 defaultTargets = ["SumOfSquares", "IntroAnalyticNumberTheory", "NumberFields"]
+allowNonModules = true
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -21,3 +22,7 @@ srcDir = "."
 [[lean_lib]]
 name = "SumOfSquares"
 srcDir = "SumOfSquares"
+
+[[lean_lib]]
+name = "NumberFields"
+srcDir = "NumberFields"
