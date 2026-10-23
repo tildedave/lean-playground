@@ -6,6 +6,10 @@ import Mathlib.FieldTheory.PrimitiveElement
 
 /-! Solutions to exercises from Marcus's Number Fields -/
 
+section Chapter2
+
+section Question1
+
 open IntermediateField Polynomial
 
 example (K : Type*) [Field K] [CharZero K] (x : K) (p q : ℚ)
@@ -184,3 +188,131 @@ theorem quadratic_fields_are_unique {K : Type*} [Field K] [CharZero K] {m n : �
     have : s = (↑n - ↑p^2 - ↑q ^ 2 * ↑m) / (2 * p * ↑q) := by grind
     rw [this] at hs
     exact_mod_cast hs
+
+end Question1
+
+section Question2
+
+open Zsqrtd
+
+/-- The ideal `I = (2, 1 + √-3)` in `ℤ[√-3]`. -/
+def I : Ideal (ℤ√(-3)) := Ideal.span {2, 1 + sqrtd}
+
+-- I ≠ (2), but I² = 2I
+theorem I_ne_two_and_sq : I ≠ Ideal.span {2} ∧ I ^ 2 = Ideal.span {2} * I := by
+  constructor
+  · intro span
+    have : (1 + sqrtd : ℤ√(-3)) ∈ I := Ideal.subset_span (by simp)
+    rw [span, Ideal.mem_span_singleton] at this
+    obtain ⟨c, hc⟩ := this
+    have hre := congrArg Zsqrtd.re hc
+    simp at hre
+    omega
+  · apply le_antisymm
+    · rw [sq]
+      unfold I
+      rw [Ideal.span_pair_mul_span_pair, Ideal.span_le]
+      simp only [Set.insert_subset_iff, Set.singleton_subset_iff, SetLike.mem_coe,
+        Ideal.mem_span_singleton_mul]
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · -- ∃ z ∈ Ideal.span {2, 1 + sqrtd}, 2 * z = 2 * 2
+        refine ⟨2, ⟨Ideal.subset_span (by simp), by simp⟩⟩
+      · -- ∃ z ∈ Ideal.span {2, 1 + sqrtd}, 2 * z = 2 * (1 + sqrtd)
+        refine ⟨1 + sqrtd, ⟨Ideal.subset_span (by simp), by simp⟩⟩
+      · -- ∃ z ∈ Ideal.span {2, 1 + sqrtd}, 2 * z = (1 + sqrtd) * 2
+        refine ⟨1 + sqrtd, ⟨Ideal.subset_span (by simp), by ring_nf⟩⟩
+      · -- ∃ z ∈ Ideal.span {2, 1 + sqrtd}, 2 * z = (1 + sqrtd) * (1 + sqrtd)
+        -- 2 * z = (1 + sqrtd) * (1 + sqrtd)
+        -- 2 * z = (1 + 2sqrtd - 3) = (2sqrtd - 2) = 2 * (sqrtd - 1)
+        refine ⟨sqrtd - 1, ⟨?_, ?_⟩⟩
+        · apply Ideal.mem_span_pair.mpr
+          refine ⟨-1, 1, by ring⟩
+        · ring_nf
+          rw [sq, dmuld]
+          push_cast
+          ring
+    · rw [sq]
+      exact Ideal.mul_mono_left (Ideal.span_mono (by simp))
+
+lemma mem_I_iff (z : ℤ√(-3)) : z ∈ I ↔ 2 ∣ (z.re + z.im) := by
+  unfold I
+  rw [Ideal.mem_span_pair]
+  constructor
+  · rintro ⟨a, b, rfl⟩
+    simp
+    omega
+  · intro ⟨k, hk⟩
+    refine ⟨k - z.im, z.im, ?_⟩
+    ring_nf
+    have : ((2 * ↑k) : ℤ√(-3)) = ↑(2 * k) := by norm_num
+    rw [mul_comm, this, ← hk]
+    push_cast
+    ring_nf
+    ext <;> simp
+
+lemma two_div_sum_iff_two_div_sub {x y : ℤ} : 2 ∣ x + y ↔ 2 ∣ x - y := by
+  grind
+
+-- OK so now take a b in I, munge through the algebra to see it's right
+theorem I_prime : I.IsPrime := by
+  rw [Ideal.isPrime_iff, Ideal.ne_top_iff_one, mem_I_iff]
+  constructor
+  · simp
+  · intro x y
+    repeat rw [mem_I_iff]
+    intro hxy
+    have : 2 ∣ (x.re + x.im) * (y.re + y.im) := by
+      -- Claude got this
+      have key : (x * y).re + (x * y).im = (x.re + x.im) * (y.re + y.im) - 2 * (2 * x.im * y.im) := by
+        simp
+        ring
+      rw [key] at hxy
+      exact (dvd_sub_left (dvd_mul_right 2 _)).mp hxy
+    apply Prime.dvd_or_dvd (Int.prime_two) this
+
+theorem I_lies_over_two : Ideal.span {2} ≤ I := by
+  apply Ideal.span_mono (by simp)
+
+-- I is the unique prime ideal containing (2)
+theorem I_unique_prime_over_two :
+    ∀ P : Ideal (ℤ√(-3)), P.IsPrime → Ideal.span {2} ≤ P → P = I := by
+  -- argument:
+  -- OK if you have a prime ideal over 2, 4 must be in it
+  -- since 4 is in it, (1 + √−3)(1−√−3) = 4 ∈ P, therefore
+  -- one of (1 + √-3), (1 - √3) ∈ P, so P contains 1 + √-3, 2, QED I guess
+  intro P hP hP_le
+  have two_in_P : (2 : (ℤ√(-3))) ∈ P := by
+    simp_all only [Int.reduceNeg, Submodule.span_singleton_le_iff_mem]
+  have four_in_P : (4 : (ℤ√(-3))) ∈ P := by
+    exact (Submodule.sub_mem_iff_left P two_in_P).mp two_in_P
+  have one_plus_sqrtd_in_P : (1 + sqrtd ∈ P) := by
+    have : (1 + sqrtd) * (1 - sqrtd) = (4 : ℤ√(-3)) := by
+      ring_nf
+      rw [sq, dmuld]
+      ring
+    rw [← this] at four_in_P
+    obtain hplus | hminus := hP.mem_or_mem' four_in_P
+    · exact hplus
+    · -- −1⋅(1−√−3)+2=1 +√−3
+      have : ((1 + sqrtd) : ℤ√(-3)) = -1 * (1 - sqrtd) + 2 := by
+        ring_nf
+      rw [this]
+      apply P.add_mem
+      · exact Ideal.mul_mem_left P (-1) hminus
+      · exact two_in_P
+  have I_le_P : I ≤ P := Ideal.span_le.mpr (Set.pair_subset two_in_P one_plus_sqrtd_in_P)
+  symm
+  apply Ideal.IsMaximal.eq_of_le ?_ (Ideal.IsPrime.ne_top hP) I_le_P
+  apply Ideal.isMaximal_iff.mpr
+  rw [mem_I_iff]
+  constructor
+  · simp
+  · intro J x I_lt_J hx x_in_J
+    rw [mem_I_iff] at hx
+    have x_minus_1_in_I : x - 1 ∈ I := by rw [mem_I_iff (x - 1)] ; dsimp; grind
+    have x_minus_1_in_J : x - 1 ∈ J := I_lt_J x_minus_1_in_I
+    exact (Submodule.sub_mem_iff_right J x_in_J).mp x_minus_1_in_J
+
+end Question2
+
+end Chapter2
