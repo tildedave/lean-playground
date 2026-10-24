@@ -147,29 +147,32 @@ section Question5
 variable {R : Type*} [CommRing R]
 variable {M : Type*} [AddCommGroup M] [Module R M]
 
+@[simps]
 def evalOne : (R →ₗ[R] M) →ₗ[R] M where
   toFun ψ := ψ 1
   map_add' := by intros; rw [LinearMap.add_apply]
   map_smul' := by simp
 
+@[simps]
+def evalOneInv : M →ₗ[R] (R →ₗ[R] M) where
+  toFun m := {
+    toFun r := r • m
+    map_add' := fun x y ↦ Module.add_smul x y m
+    map_smul' := fun m_2 x ↦ IsScalarTower.smul_assoc m_2 x m
+  }
+  map_add' := by
+    intros
+    ext ; simp
+  map_smul' := by
+    intro x y
+    ext ; simp
+
+-- no longer needed but keeping it around
 lemma linearMap_apply_eq_smul_one (φ : R →ₗ[R] M) (x : R) : φ x = x • φ 1 := by
   rw [← map_smul, smul_eq_mul, mul_one]
 
-noncomputable def exercise_hom_R_M : (R →ₗ[R] M) ≃ₗ[R] M := by
-  apply LinearEquiv.ofBijective evalOne
-  constructor
-  · intro f g hfg
-    have h1 : f 1 = g 1 := hfg
-    apply LinearMap.ext; intro x
-    rw [linearMap_apply_eq_smul_one f, linearMap_apply_eq_smul_one g, h1]
-  · intro m
-    refine ⟨{
-      toFun r := r • m
-      map_add' := fun x y ↦ Module.add_smul x y m
-      map_smul' := fun m_2 x ↦ IsScalarTower.smul_assoc m_2 x m
-     }, ?_⟩
-    unfold evalOne
-    simp
+def exercise_hom_R_M : (R →ₗ[R] M) ≃ₗ[R] M :=
+  LinearEquiv.ofLinearMap evalOne evalOneInv (by ext ; simp) (by ext ; simp)
 
 end Question5
 
