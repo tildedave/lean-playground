@@ -176,7 +176,38 @@ def exercise_hom_R_M : (R →ₗ[R] M) ≃ₗ[R] M :=
 
 end Question5
 
+section Question6
+
+variable {G : Type*} [AddCommGroup G]
+
+-- Argument
+-- A Q-vector space on G is just a map from Q to Hom(ab)(G)
+theorem exercise5_6' : Subsingleton (Module ℚ G) := by
+  constructor
+  intro M N
+  -- alpha and beta are the ℚ-vector spaces, represented by maps from
+  -- Q into the hom ring of the group
+  set alpha := @Module.toAddMonoidEnd ℚ G _ _ M
+  set beta := @Module.toAddMonoidEnd ℚ G _ _ N
+  -- iota is _the_ map from Z into Q
+  set iota := Int.castRingHom ℚ
+  -- of course, alpha.comp iota = beta.comp iota, since Z -> Q is unique
+  have composed_maps_are_equal := RingHom.ext_int (alpha.comp iota) (beta.comp iota)
+  -- casting things
+  have : (∀ m : ℤ, alpha.comp iota m = beta.comp iota m) := by intros ; rw [composed_maps_are_equal]
+  have h_int : ∀ m : ℤ, alpha m = beta m := by
+    intro m
+    exact this m
+  ext q g
+  change alpha q g = beta q g
+  -- If monoid with zero homs f and g from ℚ agree on the integers then they are equal.
+  rw [MonoidWithZeroHomClass.ext_rat' h_int]
+
+end Question6
+
 end Section5
+
+
 
 /-! Section 7 -/
 section Section7
