@@ -250,9 +250,6 @@ lemma mem_I_iff (z : ℤ√(-3)) : z ∈ I ↔ 2 ∣ (z.re + z.im) := by
     ring_nf
     ext <;> simp
 
-lemma two_div_sum_iff_two_div_sub {x y : ℤ} : 2 ∣ x + y ↔ 2 ∣ x - y := by
-  grind
-
 -- OK so now take a b in I, munge through the algebra to see it's right
 theorem I_prime : I.IsPrime := by
   rw [Ideal.isPrime_iff, Ideal.ne_top_iff_one, mem_I_iff]

@@ -1,7 +1,7 @@
 name = "lean-playground"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["SumOfSquares", "IntroAnalyticNumberTheory", "NumberFields"]
+defaultTargets = ["SumOfSquares", "IntroAnalyticNumberTheory", "NumberFields", "AlgebraChapter0"]
 allowNonModules = true
 
 [leanOptions]
@@ -26,3 +26,7 @@ srcDir = "SumOfSquares"
 [[lean_lib]]
 name = "NumberFields"
 srcDir = "NumberFields"
+
+[[lean_lib]]
+name = "AlgebraChapter0"
+srcDir = "."
