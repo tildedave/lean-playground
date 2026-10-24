@@ -6,7 +6,7 @@ import Mathlib.Data.Matrix.Basic
 /-! Chapter 3 -/
 
 /-! Section 5 -/
-section Chapter3_Section5
+section Section5
 
 variable {R : Type*} [Ring R]
 
@@ -142,13 +142,41 @@ theorem exercise5_4 (φ : M →ₗ[R] N) (hm : Simple R M) (hn : Simple R N) :
 
 end Question4
 
+section Question5
 
+variable {R : Type*} [CommRing R]
+variable {M : Type*} [AddCommGroup M] [Module R M]
 
-end Chapter3_Section5
+def evalOne : (R →ₗ[R] M) →ₗ[R] M where
+  toFun ψ := ψ 1
+  map_add' := by intros; rw [LinearMap.add_apply]
+  map_smul' := by simp
+
+lemma linearMap_apply_eq_smul_one (φ : R →ₗ[R] M) (x : R) : φ x = x • φ 1 := by
+  rw [← map_smul, smul_eq_mul, mul_one]
+
+noncomputable def exercise_hom_R_M : (R →ₗ[R] M) ≃ₗ[R] M := by
+  apply LinearEquiv.ofBijective evalOne
+  constructor
+  · intro f g hfg
+    have h1 : f 1 = g 1 := hfg
+    apply LinearMap.ext; intro x
+    rw [linearMap_apply_eq_smul_one f, linearMap_apply_eq_smul_one g, h1]
+  · intro m
+    refine ⟨{
+      toFun r := r • m
+      map_add' := fun x y ↦ Module.add_smul x y m
+      map_smul' := fun m_2 x ↦ IsScalarTower.smul_assoc m_2 x m
+     }, ?_⟩
+    unfold evalOne
+    simp
+
+end Question5
+
+end Section5
 
 /-! Section 7 -/
-
-section Chapter3_Section7
+section Section7
 
 variable {R : Type*} [CommRing R]
 variable {Z : Type*} [AddCommGroup Z] [Module R Z] [Subsingleton Z]
@@ -192,4 +220,4 @@ noncomputable def exercise_7_2
         ⟨zeromap_injective f ψ hM,
          surjective_zeromap ψ φ hM'⟩
 
-end Chapter3_Section7
+end Section7
