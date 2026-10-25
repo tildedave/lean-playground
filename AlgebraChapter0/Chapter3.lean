@@ -2,6 +2,7 @@ import Mathlib.Algebra.Exact.Basic
 import Mathlib.Algebra.Ring.Opposite
 import Mathlib.Basic.Real.Basic
 import Mathlib.Data.Matrix.Basic
+import Mathlib.Algebra.Field.Subfield.Defs
 
 /-! Chapter 3 -/
 
@@ -204,6 +205,90 @@ theorem exercise5_6' : Subsingleton (Module ℚ G) := by
   rw [MonoidWithZeroHomClass.ext_rat' h_int]
 
 end Question6
+
+section Question7
+
+variable {K : Type*} [Field K] (k : Subfield K)
+
+-- not super enlightening due to inheritance
+abbrev exercise5_7_module : Module k K where
+  add_smul := Module.add_smul
+  zero_smul := Module.zero_smul
+
+abbrev exercise5_7 : Algebra k K where
+  algebraMap := {
+    toFun (x : k) := (x : K)
+    map_one' := by simp
+    map_mul' := by simp
+    map_zero' := by simp
+    map_add' := by simp
+  }
+  commutes' r x := by simp ; ring_nf
+  smul_def' r x := by
+    simp only [RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk]
+    rw [Submonoid.smul_def, smul_eq_mul]
+
+-- just a fragment of smul_def' - sort of unenlightening
+theorem exercise5_7_smul (a : k) (x : K) :
+    (letI := exercise5_7 k; a • x) = (a : K) * x := by
+  rw [Submonoid.smul_def, smul_eq_mul]
+
+end Question7
+
+section Question8
+
+variable {R : Type*} [CommRing R]
+
+abbrev R_is_initial_in_R_Alg (A : Type*) [Ring A] [Algebra R A] : Unique (R →ₐ[R] A) := {
+  default := {
+    toFun r := (algebraMap R A) r
+    map_one' := by simp
+    map_mul' := by simp
+    map_zero' := by simp
+    map_add' := by simp
+    commutes' := by simp
+  }
+  uniq a := Algebra.ext_id_iff.mpr trivial
+}
+
+end Question8
+
+section Question9
+
+variable {R : Type*} [CommRing R]
+variable {M : Type*} [AddCommGroup M] [Module R M]
+
+-- these "show that (obvious thing) is an algebra in a natural way"
+-- problems are fairly uninteresting in Lean since all the types force
+-- it to work and there's only one possible answer in true category theory
+-- fashion
+
+abbrev exercise5_9 : Algebra R (Module.End R M) where
+  algebraMap := {
+    toFun r := {
+      toFun  m := r • m
+      map_add' := by simp
+      map_smul' := fun m x ↦ smul_comm r m x
+    }
+    map_add' x y := by
+      ext m
+      exact Module.add_smul x y m
+    map_mul' := by
+      intro x y
+      rw [mul_comm]
+      ext m ; simp only [LinearMap.coe_mk, AddHom.coe_mk, Module.End.mul_apply, map_smul]
+      exact mul_smul y x m
+    map_one' := by ext ; simp
+    map_zero' := by ext; simp
+  }
+  commutes' r f := Algebra.commutes r f
+  smul_def' r x := by trivial
+
+theorem exercise5_9_smul (r : R) (f : Module.End R M) (m : M) :
+    (letI := (exercise5_9 : Algebra R (Module.End R M)); r • f)
+    m = r • f m := by trivial
+
+end Question9
 
 end Section5
 
