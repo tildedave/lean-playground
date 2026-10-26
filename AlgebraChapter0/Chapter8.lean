@@ -6,14 +6,22 @@ import Mathlib
 
 section Section2
 
-section Question5
-
 open TensorProduct
 
 -- let us learn the mathlib verbiage
 -- submonoid = multiplicative set (thanks guys)
-variable {R : Type*} [CommRing R] (S : Submonoid R)
-  (M : Type*) [AddCommGroup M] [Module R M]
+variable {R : Type*} [CommRing R] (S : Submonoid R) (M : Type*) [AddCommGroup M] [Module R M]
+
+-- Claude suggested this as a way to clean up the left/right inverse proofs,
+-- makes sense
+/-- `s⁻¹ • (m ⊗ 1) = m ⊗ 1/s`, for any proof that `s` acts invertibly. -/
+@[simp] theorem inv_tmul_one (m : M) (s : S)
+    (h : IsUnit ((algebraMap R (Module.End R (M ⊗[R] Localization S))) s)) :
+    (↑h.unit⁻¹ : Module.End R (M ⊗[R] Localization S)) (m ⊗ₜ 1) = m ⊗ₜ Localization.mk 1 s := by
+  rw [Module.End.algebraMap_isUnit_inv_apply_eq_iff, ← TensorProduct.tmul_smul,
+    Localization.smul_mk, smul_eq_mul, mul_one, Localization.mk_self]
+
+section Question5
 
 -- could do (TensorProduct.mk R M (Localization S)).flip 1 instead
 @[simps]
@@ -46,15 +54,6 @@ noncomputable def j {S : Submonoid R} {M : Type*} [AddCommGroup M] [Module R M]
 -- Claude suggests this to make the identity proofs easier
 @[simp] theorem j_apply {S : Submonoid R} {M : Type*} [AddCommGroup M] [Module R M]
     (m : M) (y : Localization S) : j m y = y • LocalizedModule.mk m (1 : S) := rfl
-
--- Claude suggested this as a way to clean up the left/right inverse proofs,
--- makes sense
-/-- `s⁻¹ • (m ⊗ 1) = m ⊗ 1/s`, for any proof that `s` acts invertibly. -/
-@[simp] theorem inv_tmul_one (m : M) (s : S)
-    (h : IsUnit ((algebraMap R (Module.End R (M ⊗[R] Localization S))) s)) :
-    (↑h.unit⁻¹ : Module.End R (M ⊗[R] Localization S)) (m ⊗ₜ 1) = m ⊗ₜ Localization.mk 1 s := by
-  rw [Module.End.algebraMap_isUnit_inv_apply_eq_iff, ← TensorProduct.tmul_smul,
-    Localization.smul_mk, smul_eq_mul, mul_one, Localization.mk_self]
 
 noncomputable def localizedModuleEquivTensor
   : LocalizedModule S M ≃ₗ[R] M ⊗[R] Localization S := by
@@ -102,5 +101,53 @@ noncomputable def localizedModuleEquivTensor
 -- OK well that was a journey.  explicit maps are wild.
 
 end Question5
+
+section Question6
+
+-- Let N be an S^-1R-module. R-module. Prove that (S^-1 M) ⊗[S^-1R] N ≅ M ⊗[R] N
+-- pg 533
+
+variable (N : Type*) [AddCommGroup N] [Module (Localization S) N]
+  [Module R N]
+  [IsScalarTower R (Localization S) N]
+
+omit [Module R N] [IsScalarTower R (Localization S) N] in
+lemma change_of_basis_simple_tensors (m : M) (s : S) (n : N) :
+  (LocalizedModule.mk m s) ⊗ₜ[Localization S] n =
+  (LocalizedModule.mk m 1) ⊗ₜ[Localization S] (Localization.mk 1 s • n) := by
+  have h : LocalizedModule.mk m s = Localization.mk 1 s • LocalizedModule.mk m (1 : S) := by
+    rw [LocalizedModule.mk_smul_mk, one_smul, mul_one]
+  rw [h, <- TensorProduct.smul_tmul', TensorProduct.tmul_smul]
+
+-- we used the following to prove
+--  ← TensorProduct.tmul_smul,
+    -- Localization.smul_mk, smul_eq_mul, mul_one, Localization.mk_self]
+  -- TensorProduct.smul_tmul'
+
+-- send m / s ⊗ n --> m ⊗ n/s
+
+noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R] N :=
+  (LinearMap.mk₂ R (fun m n =>
+    m.liftOn (fun p => (p.1 ⊗ₜ (Localization.mk 1 p.2 • n) : M ⊗[R] N))
+    (fun p p' hpp' => by
+        -- well-definedness: p ≈ p' means ∃ u, u • p'.2 • p.1 = u • p.2 • p'.1
+        obtain ⟨u, hu⟩ := hpp'
+        sorry))
+    sorry sorry sorry sorry)
+
+#check TensorProduct.liftAddHom
+
+noncomputable def localizationChangeOfBasis
+  : LocalizedModule S M ⊗[Localization S] N ≃ₗ[R] M ⊗[R] N := by
+  refine LinearEquiv.ofLinearMap
+      (TensorProduct.lift )
+
+
+  sorry
+  -- OK well
+
+
+
+end Question6
 
 end Section2
