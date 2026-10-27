@@ -128,22 +128,62 @@ lemma change_of_basis_simple_tensors (m : M) (s : S) (n : N) :
 
 noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R] N :=
   (LinearMap.mk₂ R (fun m n =>
-    m.liftOn (fun p => (p.1 ⊗ₜ (Localization.mk 1 p.2 • n) : M ⊗[R] N))
+    m.liftOn
+    (fun p => (p.1 ⊗ₜ (Localization.mk 1 p.2 • n) : M ⊗[R] N))
     (fun p p' hpp' => by
         -- well-definedness: p ≈ p' means ∃ u, u • p'.2 • p.1 = u • p.2 • p'.1
         obtain ⟨u, hu⟩ := hpp'
-        sorry))
-    sorry sorry sorry sorry)
+        -- 1/s = us'/us's (lets us use wd-ness)
+        have : ∀ (s s' : ↑S), Localization.mk (1 : R) s = Localization.mk ((u : R) * s') (u * s' * s) := by
+          intros s s'
+          rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+          exact ⟨1, by push_cast; ring⟩
+
+        rw [this p.2 p'.2, this p'.2 p.2, mul_right_comm u p.2 p'.2]
+        --  p.1 ⊗ₜ[R] (Localization.mk (↑u * ↑p'.2) (u * p'.2 * p.2) • n
+        -- pull out u / p'.2 now
+        -- must move the R stuff to the left
+        repeat rw [<- smul_eq_mul]
+        repeat rw [<- Localization.smul_mk]
+        have hint : ∀ (r : R) (d : S) (m : M),
+          m ⊗ₜ[R] (((u : R) • Localization.mk r d) • n) =
+          (((u : R) * r) • m) ⊗ₜ[R] ((Localization.mk 1 d) • n) := by
+          intro r d m
+          have move_out : (u : R) • Localization.mk r d =
+            ((u : R) * r) • Localization.mk (1 : R) d := by
+            repeat rw [Localization.smul_mk]
+            simp only [smul_eq_mul, mul_one]
+          rw [move_out, smul_assoc, TensorProduct.smul_tmul (R' := R)]
+        rw [hint, hint]
+        simp only [Submonoid.smul_def, smul_smul] at hu
+        rw [hu]))
+    (by
+      intro m1 m2 n
+      induction m1 using LocalizedModule.induction_on with
+      | h a s =>
+      induction m2 using LocalizedModule.induction_on with
+      | h b t =>
+      rw [LocalizedModule.mk_add_mk, LocalizedModule.liftOn_mk, LocalizedModule.liftOn_mk, LocalizedModule.liftOn_mk]
+      simp only
+      -- move the t-factor
+      rw [add_tmul, smul_tmul t, <- smul_assoc, Submonoid.smul_def, Localization.smul_mk]
+      -- move the s-factor
+      rw [Submonoid.smul_def, smul_tmul, <- smul_assoc, Localization.smul_mk]
+      nth_rewrite 1 [mul_comm s t]
+      -- in both situations the fractions should cancel.  need a lemma.  I've
+      -- rewritten the terms so that the thing that cancels is on the left.
+      have : ∀ (n d : S), Localization.mk ((n : R) • 1) (n * d) = Localization.mk 1 d := by
+        sorry
+      rw [this, this])
+     sorry sorry sorry)
 
 #check TensorProduct.liftAddHom
 
 noncomputable def localizationChangeOfBasis
   : LocalizedModule S M ⊗[Localization S] N ≃ₗ[R] M ⊗[R] N := by
-  refine LinearEquiv.ofLinearMap
-      (TensorProduct.lift )
-
-
   sorry
+  -- refine LinearEquiv.ofLinearMap
+  --     (TensorProduct.lift )
   -- OK well
 
 
