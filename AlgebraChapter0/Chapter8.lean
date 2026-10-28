@@ -125,6 +125,21 @@ lemma change_of_basis_simple_tensors (m : M) (s : S) (n : N) :
   -- TensorProduct.smul_tmul'
 
 -- send m / s ⊗ n --> m ⊗ n/s
+lemma mk_cancel_left {S : Submonoid R} (n d : S)
+  : Localization.mk (↑n) (n * d) = Localization.mk 1 d := by
+  rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+  exact ⟨1, by push_cast; ring⟩
+
+lemma mk_smul_one {S : Submonoid R} (n d : S) : Localization.mk (↑n • 1) d
+  = Localization.mk ↑n d := by
+  rw [Submonoid.smul_def, smul_eq_mul, mul_one]
+
+
+/-- An `S`-scalar on the `M` side cancels against the same factor in the denominator. -/
+lemma smul_tmul_cancel (x d : S) (a : M) (n : N) :
+    (x • a) ⊗ₜ[R] (Localization.mk 1 (x * d) • n) = a ⊗ₜ[R] (Localization.mk 1 d • n) := by
+  rw [Submonoid.smul_def, smul_tmul (R' := R), ← smul_assoc, Localization.smul_mk,
+    smul_eq_mul, mul_one, mk_cancel_left]
 
 noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R] N :=
   (LinearMap.mk₂ R (fun m n =>
@@ -133,18 +148,15 @@ noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R
     (fun p p' hpp' => by
         -- well-definedness: p ≈ p' means ∃ u, u • p'.2 • p.1 = u • p.2 • p'.1
         obtain ⟨u, hu⟩ := hpp'
-        -- 1/s = us'/us's (lets us use wd-ness)
-        have : ∀ (s s' : ↑S), Localization.mk (1 : R) s = Localization.mk ((u : R) * s') (u * s' * s) := by
-          intros s s'
-          rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
-          exact ⟨1, by push_cast; ring⟩
-
-        rw [this p.2 p'.2, this p'.2 p.2, mul_right_comm u p.2 p'.2]
+        rw [<- mk_cancel_left (u * p.2) p'.2, <- mk_cancel_left (u * p'.2) p.2]
+        push_cast
+        rw [mul_right_comm u p.2 p'.2]
         --  p.1 ⊗ₜ[R] (Localization.mk (↑u * ↑p'.2) (u * p'.2 * p.2) • n
         -- pull out u / p'.2 now
         -- must move the R stuff to the left
         repeat rw [<- smul_eq_mul]
         repeat rw [<- Localization.smul_mk]
+        -- m ⊗ₜ (u • (r/d)) • n = (u * r) • m ⊗ₜ (1/d) • n
         have hint : ∀ (r : R) (d : S) (m : M),
           m ⊗ₜ[R] (((u : R) • Localization.mk r d) • n) =
           (((u : R) * r) • m) ⊗ₜ[R] ((Localization.mk 1 d) • n) := by
@@ -163,18 +175,9 @@ noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R
       | h a s =>
       induction m2 using LocalizedModule.induction_on with
       | h b t =>
-      rw [LocalizedModule.mk_add_mk, LocalizedModule.liftOn_mk, LocalizedModule.liftOn_mk, LocalizedModule.liftOn_mk]
-      simp only
-      -- move the t-factor
-      rw [add_tmul, smul_tmul t, <- smul_assoc, Submonoid.smul_def, Localization.smul_mk]
-      -- move the s-factor
-      rw [Submonoid.smul_def, smul_tmul, <- smul_assoc, Localization.smul_mk]
-      nth_rewrite 1 [mul_comm s t]
-      -- in both situations the fractions should cancel.  need a lemma.  I've
-      -- rewritten the terms so that the thing that cancels is on the left.
-      have : ∀ (n d : S), Localization.mk ((n : R) • 1) (n * d) = Localization.mk 1 d := by
-        sorry
-      rw [this, this])
+      simp only [LocalizedModule.mk_add_mk, LocalizedModule.liftOn_mk]
+      -- (t•a + s•b)/(st) ⊗ n splits, and each scalar cancels into the denominator
+      rw [add_tmul, smul_tmul_cancel, mul_comm s t, smul_tmul_cancel])
      sorry sorry sorry)
 
 #check TensorProduct.liftAddHom
