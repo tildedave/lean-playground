@@ -1,2 +1,3 @@
 import AlgebraChapter0.Chapter3
+import AlgebraChapter0.Chapter6
 import AlgebraChapter0.Chapter8
