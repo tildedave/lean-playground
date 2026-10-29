@@ -83,7 +83,7 @@ noncomputable def localizedModuleEquivTensor
     apply TensorProduct.ext'
     intro m s
     simp only [LinearMap.coe_comp, Function.comp_apply, lift.tmul, j_apply, LinearMap.id_coe, id_eq]
-    induction s using LocalizedModule.induction_on with
+    induction s with
     | h r s =>
       simp only [OreLocalization.smul_div_one, LocalizedModule.lift_mk, map_smul, m_inj_apply]
       rw [inv_tmul_one, <- TensorProduct.tmul_smul, Localization.smul_mk, smul_eq_mul, mul_one]
@@ -93,7 +93,7 @@ noncomputable def localizedModuleEquivTensor
     apply LinearMap.ext
     intro s
     simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.id_coe, id_eq]
-    induction s using LocalizedModule.induction_on with
+    induction s with
     | h r s =>
       simp only [LocalizedModule.lift_mk, m_inj_apply]
       rw [inv_tmul_one, TensorProduct.lift.tmul, j_apply, LocalizedModule.mk_smul_mk, one_smul, mul_one]
@@ -136,11 +136,14 @@ lemma mk_smul_one {S : Submonoid R} (n d : S) : Localization.mk (↑n • 1) d
 
 
 /-- An `S`-scalar on the `M` side cancels against the same factor in the denominator. -/
-lemma smul_tmul_cancel (x d : S) (a : M) (n : N) :
+lemma smul_tmul_cancel {S : Submonoid R} {M : Type*} {N : Type*}
+  [AddCommGroup N] [Module (Localization S) N] [Module R N]
+  [IsScalarTower R (Localization S) N] [AddCommMonoid M] [Module R M] (x d : S) (a : M) (n : N) :
     (x • a) ⊗ₜ[R] (Localization.mk 1 (x * d) • n) = a ⊗ₜ[R] (Localization.mk 1 d • n) := by
   rw [Submonoid.smul_def, smul_tmul (R' := R), ← smul_assoc, Localization.smul_mk,
     smul_eq_mul, mul_one, mk_cancel_left]
 
+variable {S M N} in
 noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R] N :=
   (LinearMap.mk₂ R (fun m n =>
     m.liftOn
@@ -171,25 +174,109 @@ noncomputable def unlocalize : LocalizedModule S M →ₗ[R] N →ₗ[R] M ⊗[R
         rw [hu]))
     (by
       intro m1 m2 n
-      induction m1 using LocalizedModule.induction_on with
+      induction m1 with
       | h a s =>
-      induction m2 using LocalizedModule.induction_on with
+      induction m2 with
       | h b t =>
       simp only [LocalizedModule.mk_add_mk, LocalizedModule.liftOn_mk]
       -- (t•a + s•b)/(st) ⊗ n splits, and each scalar cancels into the denominator
       rw [add_tmul, smul_tmul_cancel, mul_comm s t, smul_tmul_cancel])
-     sorry sorry sorry)
+    (by
+      intro c m n
+      induction m with
+      | h a s =>
+      simp only [LocalizedModule.smul'_mk, LocalizedModule.liftOn_mk]
+      rfl)
+     (by
+        intro m n1 n2
+        induction m with
+        | h a s =>
+        simp only [smul_add, LocalizedModule.liftOn_mk]
+        rw [tmul_add])
+     (by
+        intro c m n
+        induction m with
+        | h a s =>
+        simp only [LocalizedModule.liftOn_mk]
+        rw [<- tmul_smul, smul_comm]
+     ))
 
-#check TensorProduct.liftAddHom
+lemma add_mk_self (m1 m2 : M) (s : S) :
+  LocalizedModule.mk (m1 + m2) s = LocalizedModule.mk m1 s + LocalizedModule.mk m2 s := by
+  rw [LocalizedModule.mk_add_mk, ← smul_add, LocalizedModule.mk_cancel_common_left]
+
+variable {M N S} in
+noncomputable def localize : M →ₗ[R] N →ₗ[R] LocalizedModule S M ⊗[Localization S] N :=
+  (LinearMap.mk₂ R (fun m n => (LocalizedModule.mk m (1 : ↑S)) ⊗ₜ[Localization S] n)
+    (fun m1 m2 n => by rw [add_mk_self, add_tmul])
+    (fun c m n => by rw [← LocalizedModule.smul'_mk, smul_tmul'])
+    (fun m n1 n2 => by rw [tmul_add])
+    (fun c m n => by rw [tmul_smul]))
 
 noncomputable def localizationChangeOfBasis
   : LocalizedModule S M ⊗[Localization S] N ≃ₗ[R] M ⊗[R] N := by
-  sorry
-  -- refine LinearEquiv.ofLinearMap
-  --     (TensorProduct.lift )
-  -- OK well
-
-
+  refine LinearEquiv.ofLinearMap
+    { toAddHom := (TensorProduct.liftAddHom (R := Localization S)
+        (LinearMap.toAddMonoidHom'.comp unlocalize.toAddMonoidHom) ?hf).toAddHom
+      map_smul' := ?unlocalize_smul }
+    (TensorProduct.lift localize) ?left ?right
+  case hf =>
+    intro r' m n
+    induction r' with
+    | H p =>
+    induction m with
+    | h m' s =>
+    simp only [AddMonoidHom.coe_comp, LinearMap.toAddMonoidHom_coe, Function.comp_apply,
+      LinearMap.toAddMonoidHom'_apply]
+    unfold unlocalize
+    simp only [LinearMap.mk₂_apply]
+    rw [@LocalizedModule.mk_smul_mk]
+    rw [LocalizedModule.liftOn_mk]
+    rw [LocalizedModule.liftOn_mk]
+    simp only
+    rw [TensorProduct.smul_tmul, <- smul_assoc, Localization.smul_mk]
+    rw [smul_smul, Localization.mk_mul, mul_comm, smul_eq_mul, mul_one, one_mul]
+  case unlocalize_smul =>
+    intro m s
+    induction s with
+    | tmul m' n =>  -- m' is in S^-1M, n is in N
+      -- good times
+      change _ = m • (unlocalize m') n
+      simp only [ZeroHom.toFun_eq_coe, AddMonoidHom.toZeroHom_coe]
+      rw [smul_tmul', liftAddHom_tmul]
+      change unlocalize (m • m') n = _
+      simp only [map_smul, LinearMap.smul_apply]
+      | add x y left right => simp_all [smul_add]
+  case left =>
+    ext m n
+    simp only [AlgebraTensorModule.curry_apply, LinearMap.restrictScalars_self, curry_apply,
+      LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, ZeroHom.toFun_eq_coe,
+      AddMonoidHom.toZeroHom_coe, Function.comp_apply, lift.tmul, LinearMap.id_coe, id_eq]
+    unfold localize
+    unfold unlocalize
+    simp only [LinearMap.mk₂_apply, liftAddHom_tmul, AddMonoidHom.coe_comp,
+      LinearMap.toAddMonoidHom_coe, Function.comp_apply, LinearMap.toAddMonoidHom'_apply]
+    rw [LocalizedModule.liftOn_mk]
+    simp only
+    rw [Localization.mk_one, one_smul]
+  case right =>
+    ext t
+    simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, ZeroHom.toFun_eq_coe,
+      AddMonoidHom.toZeroHom_coe, Function.comp_apply, LinearMap.id_coe, id_eq]
+    induction t with
+    | tmul m n =>
+      simp only [liftAddHom_tmul, AddMonoidHom.coe_comp, LinearMap.toAddMonoidHom_coe,
+        Function.comp_apply, LinearMap.toAddMonoidHom'_apply]
+      induction m with
+      | h m' s =>
+      unfold localize
+      unfold unlocalize
+      simp only [LinearMap.mk₂_apply]
+      rw [LocalizedModule.liftOn_mk]
+      simp only [lift.tmul, LinearMap.map_smul_of_tower, LinearMap.mk₂_apply]
+      rw [TensorProduct.smul_tmul']
+      rw [LocalizedModule.mk_smul_mk, one_smul, mul_one]
+    | add x y left right => simp_all only [map_add]
 
 end Question6
 
