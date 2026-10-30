@@ -69,7 +69,18 @@ theorem maximal_annihilator_isPrime {R M : Type*} [CommRing R] [AddCommGroup M] 
 theorem exists_associated_prime {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
     [IsNoetherianRing R] [Nontrivial M] :
     ∃ P : Ideal R, P.IsPrime ∧ ∃ m : M, Ideal.torsionOf R M m = P := by
-  sorry
+  -- This uses Zorn's Lemma
+  -- Argument: Ann(m) is defined for all m - and always includes 0 (so nonempty)
+  -- By Zorn's Lemma there is a maximal element to Ann(m) - part 1 gives that
+  -- it is prime.
+  let F : Ideal R → Prop := fun P => ∃ m : M, m ≠ 0 ∧ Ideal.torsionOf R M m = P
+  obtain ⟨m, hm⟩ := exists_ne (0 : M)
+  obtain ⟨P, -, hP⟩ := exists_maximal_ge_of_wellFoundedGT F (Ideal.torsionOf R M m) ⟨m, hm, rfl⟩
+  exists P
+  constructor
+  · apply maximal_annihilator_isPrime P hP
+  · obtain ⟨mp, ⟨_, rfl⟩⟩ := hP.prop
+    exists mp
 
 end Question6
 
