@@ -40,9 +40,36 @@ end Question5
 section Question6
 
 -- Let M be a module over a commutative ring R, and consider the family
--- of ideals Ann(m), as m ranges over the nonzero elements of M. Prove that the
--- maximal elements in this family are prime ideals of R. Conclude that if R. is
--- Noetherian, then AuR (M) #ø
+-- of ideals Ann(m), as m ranges over the nonzero elements of M.
+
+-- Prove that the maximal elements in this family are prime ideals of R.
+theorem maximal_annihilator_isPrime {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+    (I : Ideal R)
+    (hI : Maximal (fun J : Ideal R => ∃ m : M, m ≠ 0 ∧ Ideal.torsionOf R M m = J) I) :
+    I.IsPrime := by
+  rw [@Ideal.isPrime_iff]
+  obtain ⟨m, ⟨mneq0, rfl⟩⟩ := Maximal.prop hI
+  constructor
+  · rw [Ne, Ideal.torsionOf_eq_top_iff]
+    trivial
+  · intro a b hab
+    by_cases ha : (a • m = 0)
+    · left
+      rwa [@Ideal.mem_torsionOf_iff]
+    · right
+      have hle : Ideal.torsionOf R M m ≤ Ideal.torsionOf R M (a • m) := by
+        intro r hr
+        rw [Ideal.mem_torsionOf_iff, smul_comm]
+        simp_all only [ne_eq, Ideal.mem_torsionOf_iff, smul_zero]
+      have heq := Maximal.eq_of_le hI ⟨a • m, ha, rfl⟩ hle
+      rw [heq, @Ideal.mem_torsionOf_iff, smul_comm, <- smul_assoc]
+      exact hab
+
+-- Conclude that if R is Noetherian, then Ass_R(M) ≠ 0
+theorem exists_associated_prime {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+    [IsNoetherianRing R] [Nontrivial M] :
+    ∃ P : Ideal R, P.IsPrime ∧ ∃ m : M, Ideal.torsionOf R M m = P := by
+  sorry
 
 end Question6
 
